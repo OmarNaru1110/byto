@@ -2,6 +2,17 @@
 
 Thank you for your interest in contributing to **Byto**! We welcome contributions from the community to help make this project better. Whether it's reporting/fixing bugs, improving documentation, or adding new features, your help is appreciated.
 
+## ⚠️ Before You Start Developing
+If you would like to work on a new feature, improvement, or refactor:
+- Do not start coding immediately.
+- Please open a new issue first describing what you want to work on.
+- Wait for the maintainer to review it and assign it to you if it aligns with the project's goals.
+
+This helps to:
+- Avoid duplicate work.
+- Ensure the feature fits the roadmap.
+- Maintain consistency in design and architecture.
+Only start development after the issue has been approved and assigned to you.
 ## Prerequisites
 
 Before getting started, ensure you have the following installed on your machine:
