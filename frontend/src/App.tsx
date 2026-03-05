@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Settings, Download, FolderOpen, Plus, Play, Pause, Heart } from 'lucide-react';
+import { Settings, Download, FolderOpen, Plus, Play, Pause, Heart, Loader2 } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
-import { DependencyCheckDialog } from './components/DependencyCheckDialog';
+import { DependencyUpdate } from './components/DependencyUpdate';
 import { AddMediaDialog } from './components/AddMediaDialog';
-import { YtDlpUpdateNotification } from './components/YtDlpUpdateNotification';
-import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckYtDlpUpdate } from '../wailsjs/go/main/App';
+import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
@@ -91,10 +90,24 @@ export default function App() {
     const [showSettings, setShowSettings] = useState(false);
     const [showSupport, setShowSupport] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [showDependencyCheck, setShowDependencyCheck] = useState(true);
+    const [showDependencyUpdate, setShowDependencyUpdate] = useState<boolean | null>(null);
     const [showAddMediaDialog, setShowAddMediaDialog] = useState(false);
     const [pendingUrl, setPendingUrl] = useState('');
-    const [ytdlpUpdate, setYtdlpUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
+
+    // Check if dependencies need update before showing the full-screen page
+    useEffect(() => {
+        const checkDeps = async () => {
+            try {
+                const state = await CheckDependencies();
+                const allOk = state.length > 0 && state.every((s) => s.status === 'ok' && !s.needs_update);
+                setShowDependencyUpdate(!allOk);
+            } catch (err) {
+                console.error('Error checking dependencies:', err);
+                setShowDependencyUpdate(true);
+            }
+        };
+        checkDeps();
+    }, []);
 
     // Load initial data from backend
     useEffect(() => {
@@ -264,22 +277,18 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-            {/* Dependency Check Dialog */}
-            {showDependencyCheck && (
-                <DependencyCheckDialog onClose={() => {
-                    setShowDependencyCheck(false);
-                    // Check for yt-dlp updates in the background
-                    CheckYtDlpUpdate().then(result => {
-                        if (result.has_update) {
-                            setYtdlpUpdate({
-                                currentVersion: result.current_version || '',
-                                latestVersion: result.latest_version || '',
-                            });
-                        }
-                    }).catch(err => {
-                        console.error('Failed to check yt-dlp updates:', err);
-                    });
-                }} />
+            {/* Brief loading while checking if deps need update */}
+            {showDependencyUpdate === null && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a0a]">
+                    <Loader2 className="size-8 text-blue-400 animate-spin" />
+                    <p className="mt-3 text-sm text-gray-500">Checking dependencies...</p>
+                </div>
+            )}
+            {/* Dependency Update - full screen when packages need update (hidden if all deps ok) */}
+            {showDependencyUpdate === true && (
+                <DependencyUpdate
+                    onComplete={() => setShowDependencyUpdate(false)}
+                />
             )}
 
             {/* Title Bar */}
@@ -414,15 +423,6 @@ export default function App() {
                     </div>
                 </div>
             </div>
-
-            {/* yt-dlp Update Notification */}
-            {ytdlpUpdate && (
-                <YtDlpUpdateNotification
-                    currentVersion={ytdlpUpdate.currentVersion}
-                    latestVersion={ytdlpUpdate.latestVersion}
-                    onDismiss={() => setYtdlpUpdate(null)}
-                />
-            )}
         </div>
     );
 }

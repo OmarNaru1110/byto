@@ -1,3 +1,28 @@
+export namespace deps {
+	
+	export class DependencyState {
+	    name: string;
+	    current_version: string;
+	    last_checked: number;
+	    status: string;
+	    needs_update: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DependencyState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.current_version = source["current_version"];
+	        this.last_checked = source["last_checked"];
+	        this.status = source["status"];
+	        this.needs_update = source["needs_update"];
+	    }
+	}
+
+}
+
 export namespace domain {
 	
 	export class DownloadProgress {
@@ -118,22 +143,6 @@ export namespace domain {
 
 export namespace updater {
 	
-	export class FfmpegStatus {
-	    installed: boolean;
-	    path: string;
-	    version: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new FfmpegStatus(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.installed = source["installed"];
-	        this.path = source["path"];
-	        this.version = source["version"];
-	    }
-	}
 	export class UpdateResult {
 	    success: boolean;
 	    message: string;
@@ -156,22 +165,6 @@ export namespace updater {
 	        this.has_update = source["has_update"];
 	        this.changelog = source["changelog"];
 	        this.download_url = source["download_url"];
-	    }
-	}
-	export class YtDlpStatus {
-	    installed: boolean;
-	    path: string;
-	    version: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new YtDlpStatus(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.installed = source["installed"];
-	        this.path = source["path"];
-	        this.version = source["version"];
 	    }
 	}
 

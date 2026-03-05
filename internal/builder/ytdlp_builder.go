@@ -20,6 +20,14 @@ func NewYTDLPBuilder() *YTDLPBuilder {
 	}
 }
 
+// YtDlpPath sets the path to the yt-dlp executable (e.g. from deps manager).
+func (y *YTDLPBuilder) YtDlpPath(path string) *YTDLPBuilder {
+	if path != "" {
+		y.ytdlpPath = path
+	}
+	return y
+}
+
 func findYtDlpPath() string {
 	execPath, err := os.Executable()
 	if err == nil {
