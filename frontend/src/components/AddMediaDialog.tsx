@@ -283,7 +283,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                     >
                         {/* Quality Selection */}
                         <div>
-                            <label className="text-gray-300 text-sm">Video Quality</label>
+                            <label className="text-gray-300 text-sm font-medium block mb-1">Video Quality</label>
                             <p className="text-gray-500 text-xs mb-2">Select preferred quality for this download</p>
                             <select
                                 value={quality}
@@ -303,10 +303,10 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
 
                         {/* Playlist Options Section */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label className="text-gray-300 text-sm">Is this a playlist?</label>
+                            <label className="text-gray-300 text-sm font-medium block mb-1">Is this a playlist?</label>
 
                             {/* Yes / No Toggle */}
-                            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', gap: '10px'}}>
                                 <ToggleButton isActive={isPlaylist} onClick={() => setIsPlaylist(true)}>
                                     Yes
                                 </ToggleButton>
@@ -421,23 +421,29 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                             )}
                         </div>
 
-                        {/* Audio Only Checkbox */}
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="onlyAudio"
-                                checked={onlyAudio}
-                                onChange={(e) => setOnlyAudio(e.target.checked)}
-                                className="w-4 h-4 rounded border-[#262626] bg-[#1f1f1f] accent-blue-600 cursor-pointer"
-                            />
-                            <label htmlFor="onlyAudio" className="text-gray-300 text-sm cursor-pointer select-none">
-                                Download as audio
-                            </label>
+                        {/* Audio Only Option */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label className="text-gray-300 text-sm font-medium block mb-1">Format</label>
+                            <OptionCard isSelected={onlyAudio} onClick={() => setOnlyAudio((prev) => !prev)}>
+                                {() => (
+                                    <div className="select-none" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <RadioDot selected={onlyAudio} />
+                                        <div>
+                                            <div style={{ fontSize: '14px', fontWeight: 500, color: onlyAudio ? '#60a5fa' : '#d1d5db' }}>
+                                                Audio Only
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                                Extract audio and download it without downloading the whole media
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </OptionCard>
                         </div>
 
                         {/* Download Path */}
                         <div>
-                            <label className="text-gray-300 text-sm">Download Location</label>
+                            <label className="text-gray-300 text-sm font-medium block mb-1">Download Location</label>
                             <p className="text-gray-500 text-xs mb-2">Where this file will be saved</p>
                             <div className="flex gap-2">
                                 <input
