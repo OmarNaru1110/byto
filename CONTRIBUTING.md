@@ -5,7 +5,7 @@ Thank you for your interest in contributing to **Byto**! We welcome contribution
 ## ⚠️ Before You Start Developing
 If you would like to work on a new feature, improvement, or refactor:
 - Do not start coding immediately.
-- Please open a new issue first describing what you want to work on.
+- Please open a new issue first or comment on an existing non assigned issue describing what you want to work on.
 - Wait for the maintainer to review it and assign it to you if it aligns with the project's goals.
 
 This helps to:
