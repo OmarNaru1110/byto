@@ -103,42 +103,40 @@ function OptionCard({ isSelected, onClick, children }: OptionCardProps) {
     );
 }
 
-// --- Yes / No toggle button ---
-interface ToggleButtonProps {
-    isActive: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-}
-
-function ToggleButton({ isActive, onClick, children }: ToggleButtonProps) {
-    const [hovered, setHovered] = useState(false);
-
-    const style: CSSProperties = {
-        flex: 1,
-        padding: '8px 0',
-        fontSize: '14px',
-        fontWeight: 500,
-        borderRadius: '6px',
-        border: `1px solid ${isActive ? '#3b82f6' : hovered ? '#555' : '#2d2d2d'}`,
-        background: isActive
-            ? 'rgba(59, 130, 246, 0.1)'
-            : hovered
-                ? '#252525'
-                : '#181818',
-        color: isActive ? '#60a5fa' : hovered ? '#d1d5db' : '#9ca3af',
-        cursor: 'pointer',
-        transition: 'all 0.15s ease',
-        boxShadow: isActive ? '0 0 12px rgba(59, 130, 246, 0.15)' : 'none',
-    };
-
+// --- Playlist toggle switch ---
+function PlaylistToggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
     return (
         <button
-            style={style}
-            onClick={onClick}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-label="Toggle playlist mode"
+            onClick={() => onChange(!checked)}
+            style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '999px',
+                border: `1px solid ${checked ? '#3b82f6' : '#3a3a3a'}`,
+                background: checked ? 'rgba(59, 130, 246, 0.35)' : '#1b1b1b',
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '2px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0,
+            }}
         >
-            {children}
+            <span
+                style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: checked ? '#60a5fa' : '#9ca3af',
+                    transform: checked ? 'translateX(20px)' : 'translateX(0px)',
+                    transition: 'transform 0.2s ease, background 0.2s ease',
+                    boxShadow: checked ? '0 0 10px rgba(59, 130, 246, 0.35)' : 'none',
+                }}
+            />
         </button>
     );
 }
@@ -302,123 +300,133 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         </div>
 
                         {/* Playlist Options Section */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label className="text-gray-300 text-sm font-medium block mb-1">Is this a playlist?</label>
-
-                            {/* Yes / No Toggle */}
-                            <div style={{ display: 'flex', gap: '10px'}}>
-                                <ToggleButton isActive={isPlaylist} onClick={() => setIsPlaylist(true)}>
-                                    Yes
-                                </ToggleButton>
-                                <ToggleButton isActive={!isPlaylist} onClick={() => setIsPlaylist(false)}>
-                                    No (Single Video)
-                                </ToggleButton>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingBottom: '2px',
+                                }}
+                            >
+                                <div>
+                                    <label className="text-gray-300 text-sm font-medium block">Playlist Options</label>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Enable for more advanced playlist options
+                                    </p>
+                                </div>
+                                <PlaylistToggle checked={isPlaylist} onChange={setIsPlaylist} />
                             </div>
 
-                            {/* Download options — visible only when isPlaylist */}
-                            {isPlaylist && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <label className="text-gray-300 text-sm font-medium block mb-1">Download Options</label>
-
-                                    {/* All Videos */}
-                                    <OptionCard isSelected={selectionType === 'all'} onClick={() => setSelectionType('all')}>
-                                        {() => (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <RadioDot selected={selectionType === 'all'} />
-                                                <div>
-                                                    <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'all' ? '#60a5fa' : '#d1d5db' }}>
-                                                        Download All Videos
-                                                    </div>
-                                                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                                                        Download every video in the playlist
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </OptionCard>
-
-                                    {/* Range */}
-                                    <OptionCard isSelected={selectionType === 'range'} onClick={() => setSelectionType('range')}>
-                                        {(hovered) => {
-                                            // Darker when card is idle, slightly lighter when hovered/selected
-                                            const inputBg = (selectionType === 'range' || hovered) ? '#151515' : '#0d0d0d';
-                                            return (
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                                    <RadioDot selected={selectionType === 'range'} />
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'range' ? '#60a5fa' : '#d1d5db' }}>
-                                                            Download Range
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateRows: isPlaylist ? '1fr' : '0fr',
+                                    transition: 'grid-template-rows 0.2s ease',
+                                }}
+                            >
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: isPlaylist ? '4px' : '0' }}>
+                                        {/* All Videos */}
+                                        <OptionCard isSelected={selectionType === 'all'} onClick={() => setSelectionType('all')}>
+                                            {() => (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <RadioDot selected={selectionType === 'all'} />
+                                                    <div>
+                                                        <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'all' ? '#60a5fa' : '#d1d5db' }}>
+                                                            Download All Videos
                                                         </div>
                                                         <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                                                            Download videos from start to end position
+                                                            Download every video in the playlist
                                                         </div>
-                                                        {selectionType === 'range' && (
-                                                            <div
-                                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                <StyledInput
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={rangeStart}
-                                                                    onChange={(e) => setRangeStart(e.target.value)}
-                                                                    placeholder="Start (1)"
-                                                                    bg={inputBg}
-                                                                />
-                                                                <span style={{ color: '#4b5563', flexShrink: 0, fontSize: '16px' }}>→</span>
-                                                                <StyledInput
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={rangeEnd}
-                                                                    onChange={(e) => setRangeEnd(e.target.value)}
-                                                                    placeholder="End"
-                                                                    bg={inputBg}
-                                                                />
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
-                                            );
-                                        }}
-                                    </OptionCard>
+                                            )}
+                                        </OptionCard>
 
-                                    {/* Specific Items */}
-                                    <OptionCard isSelected={selectionType === 'items'} onClick={() => setSelectionType('items')}>
-                                        {(hovered) => {
-                                            const inputBg = (selectionType === 'items' || hovered) ? '#151515' : '#0d0d0d';
-                                            return (
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                                    <RadioDot selected={selectionType === 'items'} />
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'items' ? '#60a5fa' : '#d1d5db' }}>
-                                                            Specific Videos
-                                                        </div>
-                                                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                                                            Download specific videos by their position
-                                                        </div>
-                                                        {selectionType === 'items' && (
-                                                            <div
-                                                                style={{ marginTop: '10px' }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                <StyledInput
-                                                                    value={specificItems}
-                                                                    onChange={(e) => setSpecificItems(e.target.value)}
-                                                                    placeholder="e.g. 1,3,5,8"
-                                                                    bg={inputBg}
-                                                                />
-                                                                <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                                                                    Comma-separated positions: 1,3,5,8
-                                                                </p>
+                                        {/* Range */}
+                                        <OptionCard isSelected={selectionType === 'range'} onClick={() => setSelectionType('range')}>
+                                            {(hovered) => {
+                                                // Darker when card is idle, slightly lighter when hovered/selected
+                                                const inputBg = (selectionType === 'range' || hovered) ? '#151515' : '#0d0d0d';
+                                                return (
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                        <RadioDot selected={selectionType === 'range'} />
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'range' ? '#60a5fa' : '#d1d5db' }}>
+                                                                Download Range
                                                             </div>
-                                                        )}
+                                                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                                                Download videos from start to end position
+                                                            </div>
+                                                            {selectionType === 'range' && (
+                                                                <div
+                                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <StyledInput
+                                                                        type="number"
+                                                                        min="1"
+                                                                        value={rangeStart}
+                                                                        onChange={(e) => setRangeStart(e.target.value)}
+                                                                        placeholder="Start (1)"
+                                                                        bg={inputBg}
+                                                                    />
+                                                                    <span style={{ color: '#4b5563', flexShrink: 0, fontSize: '16px' }}>→</span>
+                                                                    <StyledInput
+                                                                        type="number"
+                                                                        min="1"
+                                                                        value={rangeEnd}
+                                                                        onChange={(e) => setRangeEnd(e.target.value)}
+                                                                        placeholder="End"
+                                                                        bg={inputBg}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        }}
-                                    </OptionCard>
+                                                );
+                                            }}
+                                        </OptionCard>
+
+                                        {/* Specific Items */}
+                                        <OptionCard isSelected={selectionType === 'items'} onClick={() => setSelectionType('items')}>
+                                            {(hovered) => {
+                                                const inputBg = (selectionType === 'items' || hovered) ? '#151515' : '#0d0d0d';
+                                                return (
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                        <RadioDot selected={selectionType === 'items'} />
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '14px', fontWeight: 500, color: selectionType === 'items' ? '#60a5fa' : '#d1d5db' }}>
+                                                                Specific Videos
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                                                Download specific videos by their position
+                                                            </div>
+                                                            {selectionType === 'items' && (
+                                                                <div
+                                                                    style={{ marginTop: '10px' }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <StyledInput
+                                                                        value={specificItems}
+                                                                        onChange={(e) => setSpecificItems(e.target.value)}
+                                                                        placeholder="e.g. 1,3,5,8"
+                                                                        bg={inputBg}
+                                                                    />
+                                                                    <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                                                                        Comma-separated positions: 1,3,5,8
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }}
+                                        </OptionCard>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Audio Only Option */}
