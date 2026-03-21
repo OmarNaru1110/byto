@@ -8,7 +8,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
 import { DependencyCheckDialog } from './components/DependencyCheckDialog';
 import { AddMediaDialog } from './components/AddMediaDialog';
-import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies } from '../wailsjs/go/main/App';
+import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies, SetupDependencies } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
@@ -94,16 +94,24 @@ export default function App() {
     const [showAddMediaDialog, setShowAddMediaDialog] = useState(false);
     const [pendingUrl, setPendingUrl] = useState('');
 
-    // Check if dependencies need update before showing the full-screen page
+    // Run dependency maintenance in background, and only show dialog when deps are missing.
     useEffect(() => {
         const checkDeps = async () => {
             try {
                 const state = await CheckDependencies();
-                const allOk = state.length > 0 && state.every((s) => s.status === 'ok' && !s.needs_update);
-                setShowDependencyUpdate(!allOk);
+                const hasMissing = state.some((s) => !s.current_version || s.current_version.trim() === '');
+                setShowDependencyUpdate(hasMissing);
+
+                // If all dependency binaries exist, update/check silently in background.
+                if (!hasMissing) {
+                    void SetupDependencies();
+                }
             } catch (err) {
                 console.error('Error checking dependencies:', err);
-                setShowDependencyUpdate(true);
+
+                // Keep app usable on check failure and try setup silently.
+                setShowDependencyUpdate(false);
+                void SetupDependencies();
             }
         };
         checkDeps();

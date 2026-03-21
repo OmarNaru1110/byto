@@ -29,8 +29,8 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
     if (!s) {
       return { name, status: 'missing' };
     }
-    const ready = s.status === 'ok' && !s.needs_update;
-    if (ready) {
+    const exists = !!s.current_version && s.current_version.trim() !== '';
+    if (exists) {
       return { name, status: 'found', version: s.current_version || undefined };
     }
     return { name, status: 'missing' };
