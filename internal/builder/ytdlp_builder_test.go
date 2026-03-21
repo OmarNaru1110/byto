@@ -2,10 +2,13 @@ package builder_test
 
 import (
 	"byto/internal/builder"
+	"byto/internal/deps"
 	"byto/internal/domain"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 // ---------------------------------------------------------------------------
@@ -26,10 +29,26 @@ func TestNewYTDLPBuilder_EmptyBuild(t *testing.T) {
 	}
 }
 
-func TestNewYTDLPBuilder_YtDlpPathNonEmpty(t *testing.T) {
+func TestNewYTDLPBuilder_WithoutManager_YtDlpPathEmpty(t *testing.T) {
 	p := builder.NewYTDLPBuilder().GetYtDlpPath()
-	if p == "" {
-		t.Fatal("GetYtDlpPath returned empty string")
+	if p != "" {
+		t.Fatalf("expected empty yt-dlp path without manager, got %q", p)
+	}
+}
+
+func TestNewYTDLPBuilderWithDeps_UsesManagerPath(t *testing.T) {
+	depRoot := t.TempDir()
+	store, err := deps.NewStateStore(filepath.Join(t.TempDir(), "state.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := deps.NewManager(store)
+	dep := deps.NewYTDLPDependency(depRoot, time.Hour)
+	m.Add(dep)
+
+	b := builder.NewYTDLPBuilderWithDeps(m)
+	if got := b.GetYtDlpPath(); got != dep.Path() {
+		t.Errorf("GetYtDlpPath: got %q, want %q", got, dep.Path())
 	}
 }
 

@@ -87,6 +87,7 @@ func (y *YTDLPDependency) assetNamesForPlatform() []string {
 
 func (y *YTDLPDependency) Version() (string, error) {
 	cmd := exec.Command(y.binPath, "--version")
+	HideWindow(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
@@ -276,6 +277,7 @@ func (y *YTDLPDependency) Update(progress DownloadProgressCallback) error {
 		progress(0, 0)
 	}
 	cmd := exec.Command(y.binPath, "-U")
+	HideWindow(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

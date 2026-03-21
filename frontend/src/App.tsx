@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
-import { DependencyUpdate } from './components/DependencyUpdate';
+import { DependencyCheckDialog } from './components/DependencyCheckDialog';
 import { AddMediaDialog } from './components/AddMediaDialog';
 import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
@@ -278,17 +278,15 @@ export default function App() {
     return (
         <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
             {/* Brief loading while checking if deps need update */}
-            {showDependencyUpdate === null && (
+            {/* {showDependencyUpdate === null && (
                 <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a0a]">
                     <Loader2 className="size-8 text-blue-400 animate-spin" />
                     <p className="mt-3 text-sm text-gray-500">Checking dependencies...</p>
                 </div>
-            )}
-            {/* Dependency Update - full screen when packages need update (hidden if all deps ok) */}
+            )} */}
+            {/* Dependency check dialog when packages need install/update (hidden if all deps ok) */}
             {showDependencyUpdate === true && (
-                <DependencyUpdate
-                    onComplete={() => setShowDependencyUpdate(false)}
-                />
+                <DependencyCheckDialog onClose={() => setShowDependencyUpdate(false)} />
             )}
 
             {/* Title Bar */}

@@ -45,7 +45,7 @@ func NewApp() *App {
 	store, err := deps.NewStateStore(stateFile)
 	depManager := deps.NewManager(store)
 
-	depManager.Add(deps.NewYTDLPDependency(appConfigDir, time.Hour*24))
+	depManager.Add(deps.NewYTDLPDependency(appConfigDir, time.Hour))
 	depManager.Add(deps.NewFfmpegDependency(appConfigDir, 0))
 
 	return &App{
@@ -60,7 +60,6 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	os.MkdirAll(a.appConfigDir, 0755)
 	log.Println("Byto App started")
 }
 
@@ -308,10 +307,7 @@ func (a *App) StartDownloads() {
 				log.Printf("Processing item: %s", m.URL)
 
 				// Initialize builder - use media's own FilePath and Quality
-				b := builder.NewYTDLPBuilder()
-				if path, ok := a.depsManager.GetPath("yt-dlp"); ok {
-					b = b.YtDlpPath(path)
-				}
+				b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
 				b = b.URL(m.URL).
 					DownloadPath(m.FilePath).
 					SafeFilenames()
@@ -406,14 +402,11 @@ func (a *App) StartSingleDownload(id string) {
 		})
 	}
 
-		go func() {
+	go func() {
 		media.SetStatus(domain.InProgress)
 		log.Printf("Processing item: %s", media.URL)
 
-		b := builder.NewYTDLPBuilder()
-		if path, ok := a.depsManager.GetPath("yt-dlp"); ok {
-			b = b.YtDlpPath(path)
-		}
+		b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
 		b = b.URL(media.URL).
 			DownloadPath(media.FilePath).
 			SafeFilenames()

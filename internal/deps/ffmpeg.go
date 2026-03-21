@@ -65,6 +65,7 @@ func (f *FfmpegDependency) CheckInstalled() (bool, error) {
 
 func (f *FfmpegDependency) Version() (string, error) {
 	cmd := exec.Command(f.binPath, "-version")
+	HideWindow(cmd)
 	var out strings.Builder
 	cmd.Stdout = &out
 	cmd.Stderr = &out

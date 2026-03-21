@@ -1,11 +1,9 @@
 package builder
 
 import (
+	"byto/internal/deps"
 	"byto/internal/domain"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"runtime"
 )
 
@@ -15,39 +13,32 @@ type YTDLPBuilder struct {
 }
 
 func NewYTDLPBuilder() *YTDLPBuilder {
+	return NewYTDLPBuilderWithDeps(nil)
+}
+
+// NewYTDLPBuilderWithDeps builds a YTDLPBuilder using the yt-dlp path from the deps manager only.
+func NewYTDLPBuilderWithDeps(m *deps.Manager) *YTDLPBuilder {
 	return &YTDLPBuilder{
-		ytdlpPath: findYtDlpPath(),
+		ytdlpPath: ytDlpPathFromManager(m),
 	}
 }
 
-// YtDlpPath sets the path to the yt-dlp executable (e.g. from deps manager).
+func ytDlpPathFromManager(m *deps.Manager) string {
+	if m == nil {
+		return ""
+	}
+	if p, ok := m.GetPath("yt-dlp"); ok {
+		return p
+	}
+	return ""
+}
+
+// YtDlpPath overrides the yt-dlp executable path (e.g. for tests).
 func (y *YTDLPBuilder) YtDlpPath(path string) *YTDLPBuilder {
 	if path != "" {
 		y.ytdlpPath = path
 	}
 	return y
-}
-
-func findYtDlpPath() string {
-	execPath, err := os.Executable()
-	if err == nil {
-		appDir := filepath.Dir(execPath)
-		ytdlpName := "yt-dlp"
-		if runtime.GOOS == "windows" {
-			ytdlpName = "yt-dlp.exe"
-		}
-		bundledPath := filepath.Join(appDir, ytdlpName)
-		if _, err := os.Stat(bundledPath); err == nil {
-			return bundledPath
-		}
-	}
-
-	globalPath, err := exec.LookPath("yt-dlp")
-	if err == nil {
-		return globalPath
-	}
-
-	return "yt-dlp"
 }
 
 // GetYtDlpPath returns the path to yt-dlp executable
