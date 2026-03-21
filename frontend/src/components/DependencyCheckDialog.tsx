@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
-import { CheckCircle2, XCircle, Loader2, Download } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
 import { CheckDependencies, SetupDependencies } from '../../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 import type { deps } from '../../wailsjs/go/models';
@@ -22,6 +21,7 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
     { name: 'yt-dlp', status: 'checking' },
     { name: 'ffmpeg', status: 'checking' },
   ]);
+  const hasAutoSetupRunRef = useRef(false);
 
   const DEP_ORDER = ['yt-dlp', 'ffmpeg'] as const;
 
@@ -80,19 +80,39 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
     };
   }, []);
 
-  const handleDownload = async (depName: string) => {
-    setDependencies((prev) =>
-      prev.map((dep) => (dep.name === depName ? { ...dep, status: 'downloading', progress: 0 } : dep)),
-    );
+  const setupMissingDependencies = useCallback(
+    async () => {
+      if (hasAutoSetupRunRef.current) {
+        return;
+      }
 
-    try {
-      await SetupDependencies();
-      await checkDependencies();
-    } catch (err) {
-      console.error(`Failed to set up dependencies (${depName}):`, err);
-      await checkDependencies();
+      hasAutoSetupRunRef.current = true;
+
+      setDependencies((prev) =>
+        prev.map((dep) =>
+          dep.status === 'missing' ? { ...dep, status: 'downloading', progress: dep.progress ?? 0 } : dep,
+        ),
+      );
+
+      try {
+        await SetupDependencies();
+      } catch (err) {
+        console.error('Failed to set up dependencies:', err);
+      } finally {
+        await checkDependencies();
+      }
+    },
+    [checkDependencies],
+  );
+
+  useEffect(() => {
+    const hasMissing = dependencies.some((dep) => dep.status === 'missing');
+    const isBusy = dependencies.some((dep) => dep.status === 'checking' || dep.status === 'downloading');
+
+    if (hasMissing && !isBusy) {
+      void setupMissingDependencies();
     }
-  };
+  }, [dependencies, setupMissingDependencies]);
 
   const getStatusIcon = (status: Dependency['status']) => {
     switch (status) {
@@ -148,16 +168,6 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
               {getStatusIcon(dep.status)}
               <span className="text-gray-200">{dep.name}</span>
               <span className="ml-auto text-sm text-gray-400">{getStatusText(dep)}</span>
-              {dep.status === 'missing' && (
-                <Button
-                  size="sm"
-                  onClick={() => handleDownload(dep.name)}
-                  className="ml-2 !bg-white hover:!bg-zinc-200 !text-black h-7 px-3 text-xs"
-                >
-                  <Download className="size-2 mr-1" />
-                  Download
-                </Button>
-              )}
               {dep.status === 'downloading' && (
                 <div className="ml-2 w-16 bg-[#262626] rounded-full h-2 overflow-hidden">
                   <div
