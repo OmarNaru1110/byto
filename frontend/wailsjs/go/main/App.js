@@ -10,28 +10,12 @@ export function CheckAppUpdate() {
   return window['go']['main']['App']['CheckAppUpdate']();
 }
 
-export function CheckFfmpeg() {
-  return window['go']['main']['App']['CheckFfmpeg']();
-}
-
-export function CheckYtDlp() {
-  return window['go']['main']['App']['CheckYtDlp']();
-}
-
-export function CheckYtDlpUpdate() {
-  return window['go']['main']['App']['CheckYtDlpUpdate']();
+export function CheckDependencies() {
+  return window['go']['main']['App']['CheckDependencies']();
 }
 
 export function DownloadAppUpdate(arg1) {
   return window['go']['main']['App']['DownloadAppUpdate'](arg1);
-}
-
-export function DownloadFfmpeg() {
-  return window['go']['main']['App']['DownloadFfmpeg']();
-}
-
-export function DownloadYtDlp() {
-  return window['go']['main']['App']['DownloadYtDlp']();
 }
 
 export function GetAppVersion() {
@@ -52,10 +36,6 @@ export function GetQueue() {
 
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
-}
-
-export function GetYtDlpPath() {
-  return window['go']['main']['App']['GetYtDlpPath']();
 }
 
 export function Greet(arg1) {
@@ -98,6 +78,10 @@ export function SelectDownloadFolderWithDefault(arg1) {
   return window['go']['main']['App']['SelectDownloadFolderWithDefault'](arg1);
 }
 
+export function SetupDependencies() {
+  return window['go']['main']['App']['SetupDependencies']();
+}
+
 export function ShowInFolder(arg1) {
   return window['go']['main']['App']['ShowInFolder'](arg1);
 }
@@ -120,8 +104,4 @@ export function UpdateMediaDefaults(arg1, arg2, arg3) {
 
 export function UpdateSettings(arg1) {
   return window['go']['main']['App']['UpdateSettings'](arg1);
-}
-
-export function UpdateYTDLP() {
-  return window['go']['main']['App']['UpdateYTDLP']();
 }

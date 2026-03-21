@@ -3,6 +3,7 @@ package main
 import (
 	"byto/internal/builder"
 	"byto/internal/command"
+	"byto/internal/deps"
 	"byto/internal/domain"
 	"byto/internal/queue"
 	"byto/internal/updater"
@@ -13,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	goRuntime "runtime"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -24,14 +26,35 @@ type App struct {
 	settings      *domain.Setting
 	mediaDefaults *domain.MediaDefaults
 	updater       *updater.Updater
+	depsManager   *deps.Manager
+	appConfigDir  string
 }
 
 func NewApp() *App {
+	userDir, err := os.UserConfigDir()
+	if err != nil {
+		log.Printf("Error getting config dir: %v", err)
+		return nil
+	}
+	appConfigDir := filepath.Join(userDir, "byto")
+	if err := os.MkdirAll(appConfigDir, 0755); err != nil {
+		log.Printf("Error creating config dir: %v", err)
+	}
+
+	stateFile := filepath.Join(appConfigDir, "state.json")
+	store, err := deps.NewStateStore(stateFile)
+	depManager := deps.NewManager(store)
+
+	depManager.Add(deps.NewYTDLPDependency(appConfigDir, time.Hour))
+	depManager.Add(deps.NewFfmpegDependency(appConfigDir, 0))
+
 	return &App{
 		queue:         queue.NewQueue(),
 		settings:      domain.NewSetting(),
 		mediaDefaults: domain.NewMediaDefaults(),
 		updater:       updater.NewUpdater(),
+		appConfigDir:  appConfigDir,
+		depsManager:   depManager,
 	}
 }
 
@@ -284,8 +307,8 @@ func (a *App) StartDownloads() {
 				log.Printf("Processing item: %s", m.URL)
 
 				// Initialize builder - use media's own FilePath and Quality
-				b := builder.NewYTDLPBuilder().
-					URL(m.URL).
+				b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
+				b = b.URL(m.URL).
 					DownloadPath(m.FilePath).
 					SafeFilenames()
 				if m.OnlyAudio {
@@ -383,8 +406,8 @@ func (a *App) StartSingleDownload(id string) {
 		media.SetStatus(domain.InProgress)
 		log.Printf("Processing item: %s", media.URL)
 
-		b := builder.NewYTDLPBuilder().
-			URL(media.URL).
+		b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
+		b = b.URL(media.URL).
 			DownloadPath(media.FilePath).
 			SafeFilenames()
 		if media.OnlyAudio {
@@ -430,57 +453,6 @@ func (a *App) PauseSingleDownload(id string) {
 
 func (a *App) GetAppVersion() string {
 	return a.updater.GetAppVersion()
-}
-
-func (a *App) UpdateYTDLP() updater.UpdateResult {
-	log.Println("Updating yt-dlp...")
-	result := a.updater.UpdateYTDLP()
-	log.Printf("yt-dlp update result: %s", result.Message)
-	return result
-}
-
-func (a *App) CheckYtDlpUpdate() updater.UpdateResult {
-	log.Println("Checking for yt-dlp updates...")
-	result := a.updater.CheckYtDlpUpdate()
-	log.Printf("yt-dlp update check: hasUpdate=%v, current=%s, latest=%s", result.HasUpdate, result.CurrentVersion, result.LatestVersion)
-	return result
-}
-
-func (a *App) CheckYtDlp() updater.YtDlpStatus {
-	log.Println("Checking yt-dlp installation...")
-	status := a.updater.CheckYtDlp()
-	log.Printf("yt-dlp status: installed=%v, path=%s, version=%s", status.Installed, status.Path, status.Version)
-	return status
-}
-
-func (a *App) DownloadYtDlp() error {
-	log.Println("Downloading yt-dlp...")
-
-	progressCallback := func(downloaded, total int64) {
-		var percentage float64
-		if total > 0 {
-			percentage = float64(downloaded) / float64(total) * 100
-		}
-		runtime.EventsEmit(a.ctx, "ytdlp_download_progress", map[string]interface{}{
-			"downloaded": downloaded,
-			"total":      total,
-			"percentage": percentage,
-		})
-	}
-
-	err := a.updater.DownloadYtDlp(progressCallback)
-	if err != nil {
-		log.Printf("Failed to download yt-dlp: %v", err)
-		return err
-	}
-
-	log.Println("yt-dlp downloaded successfully")
-	return nil
-}
-
-func (a *App) GetYtDlpPath() string {
-	status := a.updater.CheckYtDlp()
-	return status.Path
 }
 
 func (a *App) CheckAppUpdate() updater.UpdateResult {
@@ -535,12 +507,17 @@ func (a *App) LaunchInstaller(installerPath string) error {
 func (a *App) PerformFullUpdate() map[string]interface{} {
 	log.Println("Performing full update check...")
 
-	// Step 1: Update yt-dlp
+	// Step 1: Update dependencies (yt-dlp, ffmpeg) via deps
 	runtime.EventsEmit(a.ctx, "update_status", map[string]interface{}{
-		"step":    "ytdlp",
-		"message": "Updating yt-dlp...",
+		"step":    "deps",
+		"message": "Updating dependencies...",
 	})
-	ytdlpResult := a.updater.UpdateYTDLP()
+	depsErr := a.depsManager.Bootstrap(nil)
+	depsSuccess := depsErr == nil
+	depsMessage := "Dependencies up to date"
+	if depsErr != nil {
+		depsMessage = depsErr.Error()
+	}
 
 	// Step 2: Check for app updates
 	runtime.EventsEmit(a.ctx, "update_status", map[string]interface{}{
@@ -550,9 +527,9 @@ func (a *App) PerformFullUpdate() map[string]interface{} {
 	appResult := a.updater.CheckAppUpdate()
 
 	return map[string]interface{}{
-		"ytdlp": map[string]interface{}{
-			"success": ytdlpResult.Success,
-			"message": ytdlpResult.Message,
+		"deps": map[string]interface{}{
+			"success": depsSuccess,
+			"message": depsMessage,
 		},
 		"app": map[string]interface{}{
 			"success":         appResult.Success,
@@ -566,36 +543,30 @@ func (a *App) PerformFullUpdate() map[string]interface{} {
 	}
 }
 
-func (a *App) CheckFfmpeg() updater.FfmpegStatus {
-	log.Println("Checking ffmpeg installation...")
-	status := a.updater.CheckFfmpeg()
-	log.Printf("ffmpeg status: installed=%v, path=%s, version=%s", status.Installed, status.Path, status.Version)
-	return status
-}
-
-func (a *App) DownloadFfmpeg() error {
-	log.Println("Downloading ffmpeg...")
-	progressCallback := func(downloaded, total int64) {
-		var percentage float64
-		if total > 0 {
-			percentage = float64(downloaded) / float64(total) * 100
-		}
-		runtime.EventsEmit(a.ctx, "ffmpeg_download_progress", map[string]interface{}{
-			"downloaded": downloaded,
-			"total":      total,
-			"percentage": percentage,
-		})
-	}
-	err := a.updater.DownloadFfmpeg(progressCallback)
-	if err != nil {
-		log.Printf("Failed to download ffmpeg: %v", err)
-		return err
-	}
-	log.Println("ffmpeg downloaded successfully")
-	return nil
-}
-
 func (a *App) ShutDown() {
 	log.Println("Shutting down Byto App")
 	runtime.Quit(a.ctx)
+}
+
+func (a *App) SetupDependencies() {
+	err := a.depsManager.Bootstrap(func(event deps.ProgressEvent) {
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "dependency_progress", event)
+		}
+	})
+
+	if err != nil {
+		log.Printf("Error bootstrapping deps: %v", err)
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "dependency_bootstrap_failed", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+	} else if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "dependency_bootstrap_complete", nil)
+	}
+}
+
+func (a *App) CheckDependencies() []deps.DependencyState {
+	return a.depsManager.DependenciesState()
 }
