@@ -9,7 +9,7 @@ import { SupportPanel } from './components/SupportPanel';
 import { DependencyCheckDialog } from './components/DependencyCheckDialog';
 import { AddMediaDialog } from './components/AddMediaDialog';
 import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies, SetupDependencies } from '../wailsjs/go/main/App';
-import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
+import { EventsOn, EventsOff, ClipboardGetText } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
 
@@ -121,6 +121,17 @@ export default function App() {
     useEffect(() => {
         const initializeApp = async () => {
             try {
+                // Seed the URL input from clipboard on launch for quicker add flow.
+                try {
+                    const clipboardText = await ClipboardGetText();
+                    const initialUrl = clipboardText?.trim() || '';
+                    if (initialUrl) {
+                        setUrlInput((current) => (current.trim() ? current : initialUrl));
+                    }
+                } catch (error) {
+                    console.warn('Could not read clipboard on launch:', error);
+                }
+
                 // Get current settings (only parallel downloads now)
                 const settings = await GetSettings();
                 if (settings) {
