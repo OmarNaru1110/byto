@@ -2,7 +2,15 @@ import { useState, useEffect, CSSProperties } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
-import { SelectDownloadFolderWithDefault, GetMediaDefaults, UpdateMediaDefaults, SaveMediaDefaults, AddToQueue } from '../../wailsjs/go/main/App';
+import {
+    SelectDownloadFolderWithDefault,
+    GetMediaDefaults,
+    UpdateMediaDefaults,
+    SaveMediaDefaults,
+    AddToQueue,
+    GetSupportedBrowsersForCookies,
+    SelectCookiesPath,
+} from '../../wailsjs/go/main/App';
 import { domain } from '../../wailsjs/go/models';
 
 // Map backend quality (number) to frontend string
@@ -184,17 +192,39 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
     const [rangeEnd, setRangeEnd] = useState('');
     const [specificItems, setSpecificItems] = useState('');
 
+    // Cookies state
+    const [isCookiesEnabled, setIsCookiesEnabled] = useState(false);
+    const [cookiesType, setCookiesType] = useState<'file' | 'browser'>('file');
+    const [cookiesPath, setCookiesPath] = useState('');
+    const [supportedBrowsers, setSupportedBrowsers] = useState<string[]>([]);
+    const [selectedBrowser, setSelectedBrowser] = useState('');
+
     // Load media defaults when dialog opens
     useEffect(() => {
         if (open) {
             loadDefaults();
+            loadSupportedBrowsers();
             setIsPlaylist(false);
             setSelectionType('all');
             setRangeStart('1');
             setRangeEnd('');
             setSpecificItems('');
+            setIsCookiesEnabled(false);
+            setCookiesType('file');
+            setCookiesPath('');
+            setSelectedBrowser('');
         }
     }, [open, url]);
+
+    const loadSupportedBrowsers = async () => {
+        try {
+            const browsers = await GetSupportedBrowsersForCookies();
+            setSupportedBrowsers(browsers || []);
+            setSelectedBrowser((prev) => prev || browsers?.[0] || '');
+        } catch (error) {
+            console.error('Error loading supported browsers:', error);
+        }
+    };
 
     const loadDefaults = async () => {
         setIsLoading(true);
@@ -204,6 +234,21 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                 setQuality(qualityFromBackend[defaults.quality] || '1080p');
                 setDownloadPath(defaults.download_path || '');
                 setOnlyAudio(defaults.only_audio || false);
+
+                const cookies = defaults.cookies;
+                if (cookies?.is_allowed) {
+                    setIsCookiesEnabled(true);
+
+                    if (cookies.type === 'browser') {
+                        setCookiesType('browser');
+                        setSelectedBrowser(cookies.browser || '');
+                        setCookiesPath('');
+                    } else {
+                        setCookiesType('file');
+                        setCookiesPath(cookies.path || '');
+                        setSelectedBrowser('');
+                    }
+                }
             }
         } catch (error) {
             console.error('Error loading media defaults:', error);
@@ -221,6 +266,35 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         }
     };
 
+    const handleSelectCookiesFile = async () => {
+        try {
+            const path = await SelectCookiesPath(cookiesPath);
+            if (path) setCookiesPath(path);
+        } catch (error) {
+            console.error('Error selecting cookies file:', error);
+        }
+    };
+
+    const getCookiesPayload = () => {
+        const cookies = new domain.Cookies();
+        cookies.is_allowed = isCookiesEnabled;
+
+        if (!isCookiesEnabled) {
+            return cookies;
+        }
+
+        cookies.type = cookiesType;
+        if (cookiesType === 'file') {
+            cookies.path = cookiesPath.trim();
+            cookies.browser = '';
+        } else {
+            cookies.browser = selectedBrowser;
+            cookies.path = '';
+        }
+
+        return cookies;
+    };
+
     const handleAdd = async () => {
         try {
             const selection = new domain.PlaylistSelection();
@@ -231,8 +305,9 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
             } else if (selectionType === 'items') {
                 selection.items = specificItems;
             }
-            const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection);
-            await UpdateMediaDefaults(quality, downloadPath, onlyAudio);
+            const cookies = getCookiesPayload();
+            const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies);
+            await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies);
             await SaveMediaDefaults();
             onSuccess(id, quality, downloadPath);
             onClose();
@@ -240,6 +315,12 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
             console.error('Error adding to queue:', error);
         }
     };
+
+    const isCookiesConfigurationValid =
+        !isCookiesEnabled ||
+        (cookiesType === 'file'
+            ? cookiesPath.trim().length > 0
+            : selectedBrowser.trim().length > 0);
 
     return (
         <Dialog open={open} onOpenChange={(isOpen: boolean) => !isOpen && onClose()}>
@@ -429,6 +510,115 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                             </div>
                         </div>
 
+                        {/* Cookies Options Section */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingBottom: '2px',
+                                }}
+                            >
+                                <div>
+                                    <label className="text-gray-300 text-sm font-medium block">Cookies Options</label>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Allow authenticated downloads with cookies
+                                    </p>
+                                </div>
+                                <PlaylistToggle checked={isCookiesEnabled} onChange={setIsCookiesEnabled} />
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateRows: isCookiesEnabled ? '1fr' : '0fr',
+                                    transition: 'grid-template-rows 0.2s ease',
+                                }}
+                            >
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: isCookiesEnabled ? '4px' : '0' }}>
+                                        {/* Upload Cookies File */}
+                                        <OptionCard isSelected={cookiesType === 'file'} onClick={() => setCookiesType('file')}>
+                                            {(hovered) => {
+                                                const inputBg = (cookiesType === 'file' || hovered) ? '#151515' : '#0d0d0d';
+                                                return (
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                        <RadioDot selected={cookiesType === 'file'} />
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '14px', fontWeight: 500, color: cookiesType === 'file' ? '#60a5fa' : '#d1d5db' }}>
+                                                                Upload Cookies File (Recommended)
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                                                Provide a cookies.txt file exported from your browser
+                                                            </div>
+                                                            {cookiesType === 'file' && (
+                                                                <div
+                                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <StyledInput
+                                                                        value={cookiesPath}
+                                                                        onChange={(e) => setCookiesPath(e.target.value)}
+                                                                        placeholder="Path to cookies.txt"
+                                                                        bg={inputBg}
+                                                                    />
+                                                                    <Button
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        className="border-[#2d2d2d] hover:bg-[#1f1f1f]"
+                                                                        onClick={handleSelectCookiesFile}
+                                                                    >
+                                                                        <FolderOpen className="size-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }}
+                                        </OptionCard>
+
+                                        {/* Extract from Browser */}
+                                        <OptionCard isSelected={cookiesType === 'browser'} onClick={() => setCookiesType('browser')}>
+                                            {() => (
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                    <RadioDot selected={cookiesType === 'browser'} />
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 500, color: cookiesType === 'browser' ? '#60a5fa' : '#d1d5db' }}>
+                                                            Choose Browser
+                                                        </div>
+                                                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                                            Let Byto extract cookies directly from an installed browser
+                                                        </div>
+                                                        {cookiesType === 'browser' && (
+                                                            <div
+                                                                style={{ marginTop: '10px' }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <select
+                                                                    value={selectedBrowser}
+                                                                    onChange={(e) => setSelectedBrowser(e.target.value)}
+                                                                    className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
+                                                                >
+                                                                    {supportedBrowsers.map((browser) => (
+                                                                        <option key={browser} value={browser}>
+                                                                            {browser}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </OptionCard>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Audio Only Option */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label className="text-gray-300 text-sm font-medium block mb-1">Format</label>
@@ -480,7 +670,11 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                     <Button variant="outline" onClick={() => onClose()} className="border-[#262626] hover:bg-[#1f1f1f]">
                         Cancel
                     </Button>
-                    <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700" disabled={isLoading || !downloadPath}>
+                    <Button
+                        onClick={handleAdd}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid}
+                    >
                         Add to Queue
                     </Button>
                 </DialogFooter>

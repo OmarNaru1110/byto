@@ -126,6 +126,16 @@ func (y *YTDLPBuilder) Playlist(playlist domain.PlaylistSelection) *YTDLPBuilder
 	return y
 }
 
+func (y *YTDLPBuilder) Cookies(path string) *YTDLPBuilder {
+	y.args = append(y.args, "--cookies", path)
+	return y
+}
+
+func (y *YTDLPBuilder) CookiesFromBrowser(browser string) *YTDLPBuilder {
+	y.args = append(y.args, "--cookies-from-browser", browser)
+	return y
+}
+
 func (y *YTDLPBuilder) Build() []string {
 	return y.args
 }

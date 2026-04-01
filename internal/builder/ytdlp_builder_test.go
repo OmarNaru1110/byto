@@ -628,3 +628,115 @@ func TestPlaylist_ChainsWithOtherMethods(t *testing.T) {
 		t.Errorf("expected URL at index 4, got %q", args[4])
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Cookies
+// ---------------------------------------------------------------------------
+
+func TestCookies_AddsCookiePathArgs(t *testing.T) {
+	path := "/tmp/cookies.txt"
+	args := builder.NewYTDLPBuilder().Cookies(path).Build()
+	if len(args) != 2 {
+		t.Fatalf("expected 2 args, got %d: %v", len(args), args)
+	}
+	if args[0] != "--cookies" {
+		t.Errorf("expected --cookies flag, got %q", args[0])
+	}
+	if args[1] != path {
+		t.Errorf("expected cookie path %q, got %q", path, args[1])
+	}
+}
+
+func TestCookies_EmptyPathStillAppendsValue(t *testing.T) {
+	args := builder.NewYTDLPBuilder().Cookies("").Build()
+	if len(args) != 2 {
+		t.Fatalf("expected 2 args, got %d: %v", len(args), args)
+	}
+	if args[0] != "--cookies" || args[1] != "" {
+		t.Errorf("expected [--cookies \"\"], got %v", args)
+	}
+}
+
+func TestCookies_ReturnsSameBuilder(t *testing.T) {
+	b := builder.NewYTDLPBuilder()
+	if b.Cookies("/tmp/cookies.txt") != b {
+		t.Error("Cookies did not return the same builder")
+	}
+}
+
+func TestCookies_ChainsWithOtherMethods(t *testing.T) {
+	args := builder.NewYTDLPBuilder().
+		Video(domain.Quality720p).
+		Cookies("/tmp/cookies.txt").
+		URL("https://example.com/video").
+		Build()
+
+	if len(args) != 5 {
+		t.Fatalf("expected 5 args in chain, got %d: %v", len(args), args)
+	}
+	if args[2] != "--cookies" {
+		t.Errorf("expected --cookies at index 2, got %q", args[2])
+	}
+	if args[3] != "/tmp/cookies.txt" {
+		t.Errorf("expected cookie path at index 3, got %q", args[3])
+	}
+	if args[4] != "https://example.com/video" {
+		t.Errorf("expected URL at index 4, got %q", args[4])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CookiesFromBrowser
+// ---------------------------------------------------------------------------
+
+func TestCookiesFromBrowser_AddsBrowserArgs(t *testing.T) {
+	browser := "chrome"
+	args := builder.NewYTDLPBuilder().CookiesFromBrowser(browser).Build()
+	if len(args) != 2 {
+		t.Fatalf("expected 2 args, got %d: %v", len(args), args)
+	}
+	if args[0] != "--cookies-from-browser" {
+		t.Errorf("expected --cookies-from-browser flag, got %q", args[0])
+	}
+	if args[1] != browser {
+		t.Errorf("expected browser %q, got %q", browser, args[1])
+	}
+}
+
+func TestCookiesFromBrowser_EmptyBrowserStillAppendsValue(t *testing.T) {
+	args := builder.NewYTDLPBuilder().CookiesFromBrowser("").Build()
+	if len(args) != 2 {
+		t.Fatalf("expected 2 args, got %d: %v", len(args), args)
+	}
+	if args[0] != "--cookies-from-browser" || args[1] != "" {
+		t.Errorf("expected [--cookies-from-browser \"\"], got %v", args)
+	}
+}
+
+func TestCookiesFromBrowser_ReturnsSameBuilder(t *testing.T) {
+	b := builder.NewYTDLPBuilder()
+	if b.CookiesFromBrowser("chrome") != b {
+		t.Error("CookiesFromBrowser did not return the same builder")
+	}
+}
+
+func TestCookiesFromBrowser_ChainsWithOtherMethods(t *testing.T) {
+	args := builder.NewYTDLPBuilder().
+		Video(domain.Quality720p).
+		CookiesFromBrowser("chrome").
+		URL("https://example.com/video").
+		Build()
+
+	if len(args) != 5 {
+		t.Fatalf("expected 5 args in chain, got %d: %v", len(args), args)
+	}
+	if args[2] != "--cookies-from-browser" {
+		t.Errorf("expected --cookies-from-browser at index 2, got %q", args[2])
+	}
+	if args[3] != "chrome" {
+		t.Errorf("expected browser at index 3, got %q", args[3])
+	}
+	if args[4] != "https://example.com/video" {
+		t.Errorf("expected URL at index 4, got %q", args[4])
+	}
+}
