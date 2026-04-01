@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	goRuntime "runtime"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,6 +80,39 @@ func (a *App) UpdateSettings(parallelDownloads int) {
 func (a *App) SaveSettings() error {
 	log.Println("Saving settings to file")
 	return a.settings.Save()
+}
+
+func (a *App) GetSupportedBrowsersForCookies() []string {
+	return []string{"brave", "chromium", "edge", "firefox", "opera", "vivaldi", "safari", "whale"}
+}
+
+func (a *App) SelectCookiesPath(defaultPath string) string {
+	if defaultPath == "" {
+		home, _ := os.UserHomeDir()
+		defaultPath = filepath.Join(home, "Downloads")
+	} else {
+		defaultPath = filepath.Dir(defaultPath)
+		if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
+			home, _ := os.UserHomeDir()
+			defaultPath = filepath.Join(home, "Downloads")
+			log.Printf("Saved path doesn't exist, falling back to: %s", defaultPath)
+		}
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "Select Cookies File",
+		DefaultDirectory: defaultPath,
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Text Files (*.txt)",
+				Pattern:     "*.txt",
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Error selecting cookies file: %v", err)
+		return ""
+	}
+	return path
 }
 
 func (a *App) SelectDownloadFolder() string {
@@ -149,7 +183,7 @@ func (a *App) GetMediaDefaults() *domain.MediaDefaults {
 }
 
 // UpdateMediaDefaults updates the media defaults for new items
-func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio bool) {
+func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio bool, cookies domain.Cookies) {
 	var q domain.VideoQuality
 	switch quality {
 	case "360p":
@@ -167,8 +201,8 @@ func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio
 	default:
 		q = domain.Quality1080p
 	}
-	a.mediaDefaults.Update(q, downloadPath, onlyAudio)
-	log.Printf("Media defaults updated in memory: quality=%s, path=%s, onlyAudio=%v", quality, downloadPath, onlyAudio)
+	a.mediaDefaults.Update(q, downloadPath, onlyAudio, cookies)
+	log.Printf("Media defaults updated in memory: quality=%s, path=%s, onlyAudio=%v, cookies=%v", quality, downloadPath, onlyAudio, cookies)
 }
 
 // SaveMediaDefaults saves the media defaults to file
@@ -177,7 +211,7 @@ func (a *App) SaveMediaDefaults() error {
 	return a.mediaDefaults.Save()
 }
 
-func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection) string {
+func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies) string {
 	id := uuid.New().String()
 	log.Printf("Adding to queue: %s with id: %s", url, id)
 
@@ -215,6 +249,7 @@ func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudi
 		Status:            domain.Pending,
 		IsPlaylist:        isPlaylist,
 		PlaylistSelection: playlistSelection,
+		Cookies:           cookies,
 		Progress: domain.DownloadProgress{
 			Percentage:      0,
 			DownloadedBytes: 0,
@@ -311,6 +346,15 @@ func (a *App) StartDownloads() {
 				b = b.URL(m.URL).
 					DownloadPath(m.FilePath).
 					SafeFilenames()
+				if m.Cookies.IsAllowed {
+					switch m.Cookies.Type {
+					case domain.CookiesTypeFile:
+						b = b.Cookies(m.Cookies.Path)
+					case domain.CookiesTypeBrowser:
+						browser := strings.ToLower(m.Cookies.Browser)
+						b = b.CookiesFromBrowser(browser)
+					}
+				}
 				if m.OnlyAudio {
 					b = b.Audio()
 				} else {
@@ -410,6 +454,15 @@ func (a *App) StartSingleDownload(id string) {
 		b = b.URL(media.URL).
 			DownloadPath(media.FilePath).
 			SafeFilenames()
+		if media.Cookies.IsAllowed {
+			switch media.Cookies.Type {
+			case domain.CookiesTypeFile:
+				b = b.Cookies(media.Cookies.Path)
+			case domain.CookiesTypeBrowser:
+				browser := strings.ToLower(media.Cookies.Browser)
+				b = b.CookiesFromBrowser(browser)
+			}
+		}
 		if media.OnlyAudio {
 			b = b.Audio()
 		} else {

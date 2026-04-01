@@ -14,6 +14,7 @@ type Media struct {
 	FilePath          string            `json:"file_path"`
 	Quality           VideoQuality      `json:"quality"`
 	OnlyAudio         bool              `json:"only_audio"`
+	Cookies           Cookies           `json:"cookies,omitempty"`
 	Status            DownloadStatus    `json:"status"`
 	Progress          DownloadProgress  `json:"progress"`
 	IsPlaylist        bool              `json:"is_playlist"`
@@ -27,6 +28,22 @@ type Media struct {
 	OnStatusChange func(id string, status DownloadStatus)     `json:"-"`
 	OnTitleChange  func(id string, title string)              `json:"-"`
 }
+
+type Cookies struct {
+	IsAllowed bool `json:"is_allowed"`
+	// either a path to a cookies file or an identifier for browser cookies is used
+	Path    string `json:"path,omitempty"`
+	Browser string `json:"browser,omitempty"`
+
+	Type CookiesType `json:"type,omitempty"`
+}
+
+type CookiesType string
+
+const (
+	CookiesTypeFile    CookiesType = "file"
+	CookiesTypeBrowser CookiesType = "browser"
+)
 
 type PlaylistSelectionType string
 

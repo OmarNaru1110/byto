@@ -4,7 +4,7 @@ import {domain} from '../models';
 import {updater} from '../models';
 import {deps} from '../models';
 
-export function AddToQueue(arg1:string,arg2:string,arg3:string,arg4:boolean,arg5:boolean,arg6:domain.PlaylistSelection):Promise<string>;
+export function AddToQueue(arg1:string,arg2:string,arg3:string,arg4:boolean,arg5:boolean,arg6:domain.PlaylistSelection,arg7:domain.Cookies):Promise<string>;
 
 export function CheckAppUpdate():Promise<updater.UpdateResult>;
 
@@ -22,6 +22,8 @@ export function GetQueue():Promise<Array<domain.Media>>;
 
 export function GetSettings():Promise<domain.Setting>;
 
+export function GetSupportedBrowsersForCookies():Promise<Array<string>>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function LaunchInstaller(arg1:string):Promise<void>;
@@ -38,6 +40,8 @@ export function SaveMediaDefaults():Promise<void>;
 
 export function SaveSettings():Promise<void>;
 
+export function SelectCookiesPath(arg1:string):Promise<string>;
+
 export function SelectDownloadFolder():Promise<string>;
 
 export function SelectDownloadFolderWithDefault(arg1:string):Promise<string>;
@@ -52,6 +56,6 @@ export function StartDownloads():Promise<void>;
 
 export function StartSingleDownload(arg1:string):Promise<void>;
 
-export function UpdateMediaDefaults(arg1:string,arg2:string,arg3:boolean):Promise<void>;
+export function UpdateMediaDefaults(arg1:string,arg2:string,arg3:boolean,arg4:domain.Cookies):Promise<void>;
 
 export function UpdateSettings(arg1:number):Promise<void>;
