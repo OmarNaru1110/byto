@@ -1,4 +1,4 @@
-import { useState, useEffect, CSSProperties } from 'react';
+import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
@@ -11,6 +11,7 @@ import {
     GetSupportedBrowsersForCookies,
     SelectCookiesPath,
 } from '../../wailsjs/go/main/App';
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 import { domain } from '../../wailsjs/go/models';
 
 // Map backend quality (number) to frontend string
@@ -174,6 +175,105 @@ function RadioDot({ selected }: { selected: boolean }) {
                         background: '#3b82f6',
                     }}
                 />
+            )}
+        </div>
+    );
+}
+
+function CookiesInfoHint() {
+    const [hovered, setHovered] = useState(false);
+    const hideTimerRef = useRef<number | null>(null);
+
+    const showTooltip = () => {
+        if (hideTimerRef.current !== null) {
+            window.clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
+        setHovered(true);
+    };
+
+    const hideTooltip = () => {
+        hideTimerRef.current = window.setTimeout(() => {
+            setHovered(false);
+            hideTimerRef.current = null;
+        }, 50);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (hideTimerRef.current !== null) {
+                window.clearTimeout(hideTimerRef.current);
+            }
+        };
+    }, []);
+
+    return (
+        <div
+            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+            onMouseEnter={showTooltip}
+            onMouseLeave={hideTooltip}
+        >
+            <span
+                aria-label="Cookies info"
+                style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    border: '1px solid #4b5563',
+                    color: '#9ca3af',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'help',
+                    userSelect: 'none',
+                    lineHeight: 1,
+                    transition: 'all 0.15s ease',
+                }}
+            >
+                !
+            </span>
+
+            {hovered && (
+                <div
+                    role="tooltip"
+                    onMouseEnter={showTooltip}
+                    onMouseLeave={hideTooltip}
+                    style={{
+                        position: 'absolute',
+                        top: '26px',
+                        left: 0,
+                        width: '270px',
+                        padding: '10px 12px',
+                        background: '#171717',
+                        border: '1px solid #2f2f2f',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 24px rgba(0, 0, 0, 0.35)',
+                        zIndex: 50,
+                        color: '#d1d5db',
+                    }}
+                >
+                    <p style={{ fontSize: '12px', lineHeight: 1.45, margin: 0 }}>
+                        Use cookies only for authenticated or restricted media. You can upload a cookies file or extract cookies from your browser.
+                    </p>
+                    <a
+                        href="https://github.com/OmarNaru1110/byto/blob/main/docs/cookies-feature.md"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            BrowserOpenURL('https://github.com/OmarNaru1110/byto/blob/main/docs/cookies-feature.md');
+                        }}
+                        style={{
+                            marginTop: '8px',
+                            display: 'inline-block',
+                            fontSize: '12px',
+                            color: '#60a5fa',
+                            textDecoration: 'underline',
+                        }}
+                    >
+                        More info and usage guide
+                    </a>
+                </div>
             )}
         </div>
     );
@@ -521,9 +621,12 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                                 }}
                             >
                                 <div>
-                                    <label className="text-gray-300 text-sm font-medium block">Cookies Options</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <label className="text-gray-300 text-sm font-medium block">Cookies Options</label>
+                                        <CookiesInfoHint />
+                                    </div>
                                     <p className="text-gray-500 text-xs mt-1">
-                                        Allow authenticated downloads with cookies
+                                        Allow authenticated downloads with cookies (USE ONLY IF NEEDED)
                                     </p>
                                 </div>
                                 <PlaylistToggle checked={isCookiesEnabled} onChange={setIsCookiesEnabled} />
