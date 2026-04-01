@@ -11,6 +11,7 @@ import {
     GetSupportedBrowsersForCookies,
     SelectCookiesPath,
 } from '../../wailsjs/go/main/App';
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 import { domain } from '../../wailsjs/go/models';
 
 // Map backend quality (number) to frontend string
@@ -258,8 +259,10 @@ function CookiesInfoHint() {
                     </p>
                     <a
                         href="https://github.com/OmarNaru1110/byto/blob/main/docs/cookies-feature.md"
-                        target="_blank"
-                        rel="noreferrer"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            BrowserOpenURL('https://github.com/OmarNaru1110/byto/blob/main/docs/cookies-feature.md');
+                        }}
                         style={{
                             marginTop: '8px',
                             display: 'inline-block',
