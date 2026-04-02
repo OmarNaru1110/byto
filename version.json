@@ -1,9 +1,9 @@
 {
-  "version": "3.0.0",
-  "release_date": "2026-03-22",
-  "changelog": "- Byto now runs without requiring administrator privileges.\n- UI: Refactored playlist options with toggle switches and a cleaner layout.\n- UI: Improved Add Media dialog labels and made audio options clearer.\n- Setup: Streamlined dependency installation and removed the manual download button.\n- Performance: Dependency updates now run in the background so you can keep using the app uninterrupted.",
+  "version": "3.1.0",
+  "release_date": "2026-04-02",
+  "changelog": "- Auto-fill URL input from clipboard on app launch.\n- Add cookies support for authenticated downloads.\n- Add functionality to start download directly from download panel.",
   "downloads": {
-    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.0.0/byto-amd64-installer.exe",
+    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.1.0/byto-amd64-installer.exe",
     "darwin": "",
     "linux": ""
   },
