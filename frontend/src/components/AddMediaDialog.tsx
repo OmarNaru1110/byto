@@ -8,6 +8,7 @@ import {
     UpdateMediaDefaults,
     SaveMediaDefaults,
     AddToQueue,
+    StartSingleDownload,
     GetSupportedBrowsersForCookies,
     SelectCookiesPath,
 } from '../../wailsjs/go/main/App';
@@ -298,6 +299,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
     const [cookiesPath, setCookiesPath] = useState('');
     const [supportedBrowsers, setSupportedBrowsers] = useState<string[]>([]);
     const [selectedBrowser, setSelectedBrowser] = useState('');
+    const [isStartHovered, setIsStartHovered] = useState(false);
 
     // Load media defaults when dialog opens
     useEffect(() => {
@@ -315,6 +317,20 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
             setSelectedBrowser('');
         }
     }, [open, url]);
+
+    useEffect(() => {
+        if (!open || isLoading) {
+            return;
+        }
+
+        // Focus Start Download so Enter triggers immediate start by default.
+        const focusId = window.setTimeout(() => {
+            const startButton = document.getElementById('start-download-button');
+            startButton?.focus();
+        }, 0);
+
+        return () => window.clearTimeout(focusId);
+    }, [open, isLoading]);
 
     const loadSupportedBrowsers = async () => {
         try {
@@ -395,24 +411,40 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         return cookies;
     };
 
-    const handleAdd = async () => {
+    const enqueueMedia = async (): Promise<string> => {
+        const selection = new domain.PlaylistSelection();
+        selection.type = selectionType;
+        if (selectionType === 'range') {
+            selection.start_index = parseInt(rangeStart) || 1;
+            selection.end_index = parseInt(rangeEnd) || parseInt(rangeStart) || 1;
+        } else if (selectionType === 'items') {
+            selection.items = specificItems;
+        }
+        const cookies = getCookiesPayload();
+        const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies);
+        await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies);
+        await SaveMediaDefaults();
+        return id;
+    };
+
+    const handleAddToQueue = async () => {
         try {
-            const selection = new domain.PlaylistSelection();
-            selection.type = selectionType;
-            if (selectionType === 'range') {
-                selection.start_index = parseInt(rangeStart) || 1;
-                selection.end_index = parseInt(rangeEnd) || parseInt(rangeStart) || 1;
-            } else if (selectionType === 'items') {
-                selection.items = specificItems;
-            }
-            const cookies = getCookiesPayload();
-            const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies);
-            await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies);
-            await SaveMediaDefaults();
+            const id = await enqueueMedia();
             onSuccess(id, quality, downloadPath);
             onClose();
         } catch (error) {
             console.error('Error adding to queue:', error);
+        }
+    };
+
+    const handleStartDownload = async () => {
+        try {
+            const id = await enqueueMedia();
+            onSuccess(id, quality, downloadPath);
+            await StartSingleDownload(id);
+            onClose();
+        } catch (error) {
+            console.error('Error starting single download:', error);
         }
     };
 
@@ -774,11 +806,27 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         Cancel
                     </Button>
                     <Button
-                        onClick={handleAdd}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={handleAddToQueue}
+                        variant="outline"
+                        className="border-[#262626] hover:bg-[#1f1f1f]"
                         disabled={isLoading || !downloadPath || !isCookiesConfigurationValid}
                     >
                         Add to Queue
+                    </Button>
+                    <Button
+                        id="start-download-button"
+                        onClick={handleStartDownload}
+                        onMouseEnter={() => setIsStartHovered(true)}
+                        onMouseLeave={() => setIsStartHovered(false)}
+                        style={{
+                            backgroundColor: isStartHovered ? '#e5e7eb' : '#ffffff',
+                            color: '#000000',
+                            transition: 'background-color 0.15s ease',
+                        }}
+                        autoFocus
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid}
+                    >
+                        Start Download
                     </Button>
                 </DialogFooter>
             </DialogContent>
