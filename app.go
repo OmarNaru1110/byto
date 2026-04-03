@@ -115,10 +115,6 @@ func (a *App) SelectCookiesPath(defaultPath string) string {
 	return path
 }
 
-func (a *App) SelectDownloadFolder() string {
-	return a.SelectDownloadFolderWithDefault("")
-}
-
 func (a *App) SelectDownloadFolderWithDefault(defaultPath string) string {
 	if defaultPath == "" {
 		defaultPath = a.mediaDefaults.DownloadPath

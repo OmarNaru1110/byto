@@ -78,10 +78,6 @@ export function SelectCookiesPath(arg1) {
   return window['go']['main']['App']['SelectCookiesPath'](arg1);
 }
 
-export function SelectDownloadFolder() {
-  return window['go']['main']['App']['SelectDownloadFolder']();
-}
-
 export function SelectDownloadFolderWithDefault(arg1) {
   return window['go']['main']['App']['SelectDownloadFolderWithDefault'](arg1);
 }
