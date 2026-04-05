@@ -59,6 +59,22 @@ export namespace domain {
 	        this.logs = source["logs"];
 	    }
 	}
+	export class TimeRange {
+	    is_allowed: boolean;
+	    start?: string;
+	    end?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TimeRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.is_allowed = source["is_allowed"];
+	        this.start = source["start"];
+	        this.end = source["end"];
+	    }
+	}
 	export class PlaylistSelection {
 	    type: string;
 	    start_index: number;
@@ -90,6 +106,7 @@ export namespace domain {
 	    progress: DownloadProgress;
 	    is_playlist: boolean;
 	    playlist_selection?: PlaylistSelection;
+	    time_range?: TimeRange;
 	
 	    static createFrom(source: any = {}) {
 	        return new Media(source);
@@ -109,6 +126,7 @@ export namespace domain {
 	        this.progress = this.convertValues(source["progress"], DownloadProgress);
 	        this.is_playlist = source["is_playlist"];
 	        this.playlist_selection = this.convertValues(source["playlist_selection"], PlaylistSelection);
+	        this.time_range = this.convertValues(source["time_range"], TimeRange);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

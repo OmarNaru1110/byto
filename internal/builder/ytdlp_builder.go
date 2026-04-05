@@ -135,6 +135,10 @@ func (y *YTDLPBuilder) CookiesFromBrowser(browser string) *YTDLPBuilder {
 	y.args = append(y.args, "--cookies-from-browser", browser)
 	return y
 }
+func (y *YTDLPBuilder) DownloadSection(timerange domain.TimeRange) *YTDLPBuilder {
+	y.args = append(y.args, "--download-sections", fmt.Sprintf("*%s-%s", timerange.Start, timerange.End))
+	return y
+}
 
 func (y *YTDLPBuilder) Build() []string {
 	return y.args

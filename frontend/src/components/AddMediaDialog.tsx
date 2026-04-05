@@ -25,6 +25,8 @@ const qualityFromBackend: Record<number, string> = {
     5: '2160p',
 };
 
+const timeRangePattern = /^\d{2}:[0-5]\d:[0-5]\d$/;
+
 interface AddMediaDialogProps {
     url: string;
     open: boolean;
@@ -293,6 +295,11 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
     const [rangeEnd, setRangeEnd] = useState('');
     const [specificItems, setSpecificItems] = useState('');
 
+    // Download sections state
+    const [isSectionRangeEnabled, setIsSectionRangeEnabled] = useState(false);
+    const [sectionStart, setSectionStart] = useState('00:00:00');
+    const [sectionEnd, setSectionEnd] = useState('00:00:00');
+
     // Cookies state
     const [isCookiesEnabled, setIsCookiesEnabled] = useState(false);
     const [cookiesType, setCookiesType] = useState<'file' | 'browser'>('file');
@@ -311,6 +318,9 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
             setRangeStart('1');
             setRangeEnd('');
             setSpecificItems('');
+            setIsSectionRangeEnabled(false);
+            setSectionStart('00:00:00');
+            setSectionEnd('00:00:00');
             setIsCookiesEnabled(false);
             setCookiesType('file');
             setCookiesPath('');
@@ -420,8 +430,16 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         } else if (selectionType === 'items') {
             selection.items = specificItems;
         }
+
+        const timeRange = new domain.TimeRange();
+        timeRange.is_allowed = isSectionRangeEnabled;
+        if (isSectionRangeEnabled) {
+            timeRange.start = sectionStart.trim();
+            timeRange.end = sectionEnd.trim();
+        }
+
         const cookies = getCookiesPayload();
-        const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies);
+        const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies, timeRange);
         await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies);
         await SaveMediaDefaults();
         return id;
@@ -453,6 +471,10 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         (cookiesType === 'file'
             ? cookiesPath.trim().length > 0
             : selectedBrowser.trim().length > 0);
+
+    const isSectionRangeValid =
+        !isSectionRangeEnabled ||
+        (timeRangePattern.test(sectionStart.trim()) && timeRangePattern.test(sectionEnd.trim()));
 
     return (
         <Dialog open={open} onOpenChange={(isOpen: boolean) => !isOpen && onClose()}>
@@ -510,6 +532,62 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                                 <option value="1440p">1440p (2K)</option>
                                 <option value="2160p">2160p (4K)</option>
                             </select>
+                        </div>
+
+                        {/* Download Sections */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingBottom: '2px',
+                                }}
+                            >
+                                <div>
+                                    <label className="text-gray-300 text-sm font-medium block">Media Range</label>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Download only a specific time range
+                                    </p>
+                                </div>
+                                <PlaylistToggle checked={isSectionRangeEnabled} onChange={setIsSectionRangeEnabled} />
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateRows: isSectionRangeEnabled ? '1fr' : '0fr',
+                                    transition: 'grid-template-rows 0.2s ease',
+                                }}
+                            >
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div style={{ paddingTop: isSectionRangeEnabled ? '8px' : '0' }}>
+                                        <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                                                Use <code>HH:MM:SS</code> format, for example 00:01:05 to 00:03:20
+                                        </p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <StyledInput
+                                                value={sectionStart}
+                                                onChange={(e) => setSectionStart(e.target.value)}
+                                                    placeholder="Start (00:00:00)"
+                                                bg="#0d0d0d"
+                                            />
+                                            <span style={{ color: '#4b5563', flexShrink: 0, fontSize: '16px' }}>→</span>
+                                            <StyledInput
+                                                value={sectionEnd}
+                                                onChange={(e) => setSectionEnd(e.target.value)}
+                                                    placeholder="End (00:00:00)"
+                                                bg="#0d0d0d"
+                                            />
+                                        </div>
+                                        {!isSectionRangeValid && (
+                                            <p style={{ fontSize: '11px', color: '#f87171', marginTop: '6px' }}>
+                                                    Invalid format. Expected <code>HH:MM:SS</code> (example: 00:01:05).
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Playlist Options Section */}
@@ -809,7 +887,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         onClick={handleAddToQueue}
                         variant="outline"
                         className="border-[#262626] hover:bg-[#1f1f1f]"
-                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid}
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid}
                     >
                         Add to Queue
                     </Button>
@@ -824,7 +902,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                             transition: 'background-color 0.15s ease',
                         }}
                         autoFocus
-                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid}
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid}
                     >
                         Start Download
                     </Button>

@@ -207,7 +207,7 @@ func (a *App) SaveMediaDefaults() error {
 	return a.mediaDefaults.Save()
 }
 
-func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies) string {
+func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies, timerange domain.TimeRange) string {
 	id := uuid.New().String()
 	log.Printf("Adding to queue: %s with id: %s", url, id)
 
@@ -246,6 +246,7 @@ func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudi
 		IsPlaylist:        isPlaylist,
 		PlaylistSelection: playlistSelection,
 		Cookies:           cookies,
+		TimeRange:         timerange,
 		Progress: domain.DownloadProgress{
 			Percentage:      0,
 			DownloadedBytes: 0,
@@ -359,7 +360,9 @@ func (a *App) StartDownloads() {
 				if m.IsPlaylist {
 					b = b.Playlist(m.PlaylistSelection)
 				}
-
+				if m.TimeRange.IsAllowed && m.TimeRange.Validate() == nil {
+					b = b.DownloadSection(m.TimeRange)
+				}
 				cmd := &command.DownloadCommand{
 					Builder: b,
 				}
@@ -467,7 +470,9 @@ func (a *App) StartSingleDownload(id string) {
 		if media.IsPlaylist {
 			b = b.Playlist(media.PlaylistSelection)
 		}
-
+		if media.TimeRange.IsAllowed && media.TimeRange.Validate() == nil {
+			b = b.DownloadSection(media.TimeRange)
+		}
 		cmd := &command.DownloadCommand{
 			Builder: b,
 		}

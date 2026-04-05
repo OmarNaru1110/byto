@@ -454,6 +454,55 @@ func TestDownloadStatus_Sequence(t *testing.T) {
 // PlaylistSelection.Validate
 // ===========================================================================
 
+// ===========================================================================
+// TimeRange.Validate
+// ===========================================================================
+
+func TestTimeRange_Validate_Valid_ReturnsNil(t *testing.T) {
+	tr := domain.TimeRange{Start: "00:01:02", End: "01:23:45"}
+	if err := tr.Validate(); err != nil {
+		t.Errorf("expected no error for valid time range, got: %v", err)
+	}
+}
+
+func TestTimeRange_Validate_MissingStart_ReturnsError(t *testing.T) {
+	tr := domain.TimeRange{End: "01:23:45"}
+	if err := tr.Validate(); err == nil {
+		t.Error("expected error when start is empty, got nil")
+	}
+}
+
+func TestTimeRange_Validate_MissingEnd_ReturnsError(t *testing.T) {
+	tr := domain.TimeRange{Start: "00:01:02"}
+	if err := tr.Validate(); err == nil {
+		t.Error("expected error when end is empty, got nil")
+	}
+}
+
+func TestTimeRange_Validate_InvalidStartFormat_ReturnsError(t *testing.T) {
+	tr := domain.TimeRange{Start: "1:2:3", End: "01:23:45"}
+	err := tr.Validate()
+	if err == nil {
+		t.Fatal("expected error for invalid start format, got nil")
+	}
+	const want = "invalid time range start"
+	if !containsSubstring(err.Error(), want) {
+		t.Errorf("expected error message to contain %q, got: %q", want, err.Error())
+	}
+}
+
+func TestTimeRange_Validate_InvalidEndFormat_ReturnsError(t *testing.T) {
+	tr := domain.TimeRange{Start: "00:01:02", End: "1:2:3"}
+	err := tr.Validate()
+	if err == nil {
+		t.Fatal("expected error for invalid end format, got nil")
+	}
+	const want = "invalid time range end"
+	if !containsSubstring(err.Error(), want) {
+		t.Errorf("expected error message to contain %q, got: %q", want, err.Error())
+	}
+}
+
 // --- SelectionAll ----------------------------------------------------------
 
 func TestPlaylistSelection_Validate_All_ReturnsNil(t *testing.T) {
