@@ -135,6 +135,17 @@ func (y *YTDLPBuilder) CookiesFromBrowser(browser string) *YTDLPBuilder {
 	y.args = append(y.args, "--cookies-from-browser", browser)
 	return y
 }
+
+func (y *YTDLPBuilder) JsRuntimes(jsRuntime string) *YTDLPBuilder {
+	y.args = append(y.args, "--js-runtimes", jsRuntime)
+	return y
+}
+
+func (y *YTDLPBuilder) ExtractorArgs(args string) *YTDLPBuilder {
+	y.args = append(y.args, "--extractor-args", args)
+	return y
+}
+
 func (y *YTDLPBuilder) DownloadSection(timerange domain.TimeRange) *YTDLPBuilder {
 	y.args = append(y.args, "--download-sections", fmt.Sprintf("*%s-%s", timerange.Start, timerange.End))
 	return y
