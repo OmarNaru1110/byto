@@ -4,7 +4,7 @@ import {domain} from '../models';
 import {updater} from '../models';
 import {deps} from '../models';
 
-export function AddToQueue(arg1:string,arg2:string,arg3:string,arg4:boolean,arg5:boolean,arg6:domain.PlaylistSelection,arg7:domain.Cookies):Promise<string>;
+export function AddToQueue(arg1:string,arg2:string,arg3:string,arg4:boolean,arg5:boolean,arg6:domain.PlaylistSelection,arg7:domain.Cookies,arg8:domain.TimeRange):Promise<string>;
 
 export function CheckAppUpdate():Promise<updater.UpdateResult>;
 

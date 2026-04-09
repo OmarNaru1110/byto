@@ -208,7 +208,7 @@ func (a *App) SaveMediaDefaults() error {
 	return a.mediaDefaults.Save()
 }
 
-func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies) string {
+func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies, timerange domain.TimeRange) string {
 	id := uuid.New().String()
 	log.Printf("Adding to queue: %s with id: %s", url, id)
 
@@ -247,6 +247,7 @@ func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudi
 		IsPlaylist:        isPlaylist,
 		PlaylistSelection: playlistSelection,
 		Cookies:           cookies,
+		TimeRange:         timerange,
 		Progress: domain.DownloadProgress{
 			Percentage:      0,
 			DownloadedBytes: 0,
@@ -339,10 +340,13 @@ func (a *App) StartDownloads() {
 				log.Printf("Processing item: %s", m.URL)
 
 				// Initialize builder - use media's own FilePath and Quality
+				denoPath, _ := a.depsManager.GetPath("deno")
+
 				b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
 				b = b.URL(m.URL).
 					DownloadPath(m.FilePath).
-					SafeFilenames()
+					SafeFilenames().
+					JsRuntimes("deno:" + denoPath)
 				if m.Cookies.IsAllowed {
 					switch m.Cookies.Type {
 					case domain.CookiesTypeFile:
@@ -360,7 +364,10 @@ func (a *App) StartDownloads() {
 				if m.IsPlaylist {
 					b = b.Playlist(m.PlaylistSelection)
 				}
-
+				if m.TimeRange.IsAllowed && m.TimeRange.Validate() == nil {
+					b = b.DownloadSection(m.TimeRange)
+					b = b.ExtractorArgs("youtube:player_client=web_safari")
+				}
 				cmd := &command.DownloadCommand{
 					Builder: b,
 				}
@@ -447,10 +454,13 @@ func (a *App) StartSingleDownload(id string) {
 		media.SetStatus(domain.InProgress)
 		log.Printf("Processing item: %s", media.URL)
 
+		denoPath, _ := a.depsManager.GetPath("deno")
+
 		b := builder.NewYTDLPBuilderWithDeps(a.depsManager)
 		b = b.URL(media.URL).
 			DownloadPath(media.FilePath).
-			SafeFilenames()
+			SafeFilenames().
+			JsRuntimes("deno:" + denoPath)
 		if media.Cookies.IsAllowed {
 			switch media.Cookies.Type {
 			case domain.CookiesTypeFile:
@@ -468,7 +478,10 @@ func (a *App) StartSingleDownload(id string) {
 		if media.IsPlaylist {
 			b = b.Playlist(media.PlaylistSelection)
 		}
-
+		if media.TimeRange.IsAllowed && media.TimeRange.Validate() == nil {
+			b = b.DownloadSection(media.TimeRange)
+			b = b.ExtractorArgs("youtube:player_client=web_safari")
+		}
 		cmd := &command.DownloadCommand{
 			Builder: b,
 		}

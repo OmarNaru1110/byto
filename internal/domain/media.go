@@ -19,6 +19,7 @@ type Media struct {
 	Progress          DownloadProgress  `json:"progress"`
 	IsPlaylist        bool              `json:"is_playlist"`
 	PlaylistSelection PlaylistSelection `json:"playlist_selection,omitempty"`
+	TimeRange         TimeRange         `json:"time_range,omitempty"`
 	mu                sync.Mutex
 	// Context for cancellation
 	Ctx        context.Context    `json:"-"`
