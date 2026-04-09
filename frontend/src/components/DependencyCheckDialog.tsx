@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
 import { CheckDependencies, SetupDependencies } from '../../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 import type { deps } from '../../wailsjs/go/models';
@@ -20,10 +21,11 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
   const [dependencies, setDependencies] = useState<Dependency[]>([
     { name: 'yt-dlp', status: 'checking' },
     { name: 'ffmpeg', status: 'checking' },
+    { name: 'deno', status: 'checking' },
   ]);
   const hasAutoSetupRunRef = useRef(false);
 
-  const DEP_ORDER = ['yt-dlp', 'ffmpeg'] as const;
+  const DEP_ORDER = ['yt-dlp', 'ffmpeg', 'deno'] as const;
 
   const mapStateToDependency = (name: string, s: deps.DependencyState | undefined): Dependency => {
     if (!s) {
@@ -109,10 +111,15 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
     const hasMissing = dependencies.some((dep) => dep.status === 'missing');
     const isBusy = dependencies.some((dep) => dep.status === 'checking' || dep.status === 'downloading');
 
-    if (hasMissing && !isBusy) {
+    if (hasMissing && !isBusy && !hasAutoSetupRunRef.current) {
       void setupMissingDependencies();
     }
   }, [dependencies, setupMissingDependencies]);
+
+  const handleManualRetry = useCallback(() => {
+    hasAutoSetupRunRef.current = false;
+    void setupMissingDependencies();
+  }, [setupMissingDependencies]);
 
   const getStatusIcon = (status: Dependency['status']) => {
     switch (status) {
@@ -179,6 +186,14 @@ export function DependencyCheckDialog({ onClose }: DependencyCheckDialogProps) {
             </div>
           ))}
         </div>
+
+        {dependencies.some(dep => dep.status === 'missing') && hasAutoSetupRunRef.current && (
+          <div className="pt-4 border-t border-[#262626] flex justify-end">
+            <Button onClick={handleManualRetry} className="bg-blue-600 hover:bg-blue-700">
+              Retry Download
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
