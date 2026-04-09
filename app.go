@@ -48,6 +48,7 @@ func NewApp() *App {
 
 	depManager.Add(deps.NewYTDLPDependency(appConfigDir, time.Hour))
 	depManager.Add(deps.NewFfmpegDependency(appConfigDir, 0))
+	depManager.Add(deps.NewDenoDependency(appConfigDir, 0))
 
 	return &App{
 		queue:         queue.NewQueue(),
