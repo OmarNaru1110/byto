@@ -11,12 +11,12 @@ interface SettingsPanelProps {
   onSave: (settings: { parallelDownloads: string }) => void;
 }
 
-type UpdateStatus = 'idle' | 'checking' | 'ytdlp-updating' | 'app-checking' | 'update-available' | 'downloading' | 'ready-to-install' | 'done' | 'error';
+type UpdateStatus = 'idle' | 'checking' | 'deps-updating' | 'app-checking' | 'update-available' | 'downloading' | 'ready-to-install' | 'done' | 'error';
 
 interface UpdateState {
   status: UpdateStatus;
   message: string;
-  ytdlpResult?: { success: boolean; message: string };
+  depsResult?: { success: boolean; message: string };
   appResult?: {
     success: boolean;
     message: string;
@@ -54,8 +54,8 @@ export function SettingsPanel({
   // Listen for update events
   useEffect(() => {
     const unsubStatus = EventsOn('update_status', (data: { step: string; message: string }) => {
-      if (data.step === 'ytdlp') {
-        setUpdateState(prev => ({ ...prev, status: 'ytdlp-updating', message: data.message }));
+      if (data.step === 'deps') {
+        setUpdateState(prev => ({ ...prev, status: 'deps-updating', message: data.message }));
       } else if (data.step === 'app_check') {
         setUpdateState(prev => ({ ...prev, status: 'app-checking', message: data.message }));
       }
@@ -88,7 +88,7 @@ export function SettingsPanel({
     try {
       const result = await PerformFullUpdate();
 
-      const ytdlpResult = result.ytdlp as { success: boolean; message: string };
+      const depsResult = result.deps as { success: boolean; message: string };
       const appResult = result.app as {
         success: boolean;
         message: string;
@@ -103,14 +103,14 @@ export function SettingsPanel({
         setUpdateState({
           status: 'update-available',
           message: `New version available: ${appResult.latest_version}`,
-          ytdlpResult,
+          depsResult,
           appResult
         });
       } else {
         setUpdateState({
           status: 'done',
           message: 'Everything is up to date!',
-          ytdlpResult,
+          depsResult,
           appResult
         });
       }
@@ -167,7 +167,7 @@ export function SettingsPanel({
   const getStatusIcon = () => {
     switch (updateState.status) {
       case 'checking':
-      case 'ytdlp-updating':
+      case 'deps-updating':
       case 'app-checking':
       case 'downloading':
         return <Loader2 className="size-4 animate-spin text-blue-400" />;
@@ -206,9 +206,9 @@ export function SettingsPanel({
                 variant="outline"
                 className="border-[#262626] hover:bg-[#1f1f1f]"
                 onClick={handleCheckForUpdates}
-                disabled={['checking', 'ytdlp-updating', 'app-checking', 'downloading'].includes(updateState.status)}
+                disabled={['checking', 'deps-updating', 'app-checking', 'downloading'].includes(updateState.status)}
               >
-                <RefreshCw className={`size-4 mr-2 ${['checking', 'ytdlp-updating', 'app-checking'].includes(updateState.status) ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`size-4 mr-2 ${['checking', 'deps-updating', 'app-checking'].includes(updateState.status) ? 'animate-spin' : ''}`} />
                 Check for Updates
               </Button>
             </div>
@@ -228,11 +228,11 @@ export function SettingsPanel({
                   </span>
                 </div>
 
-                {/* yt-dlp result */}
-                {updateState.ytdlpResult && (
+                {/* Dependencies result */}
+                {updateState.depsResult && (
                   <div className="text-xs text-gray-400 pl-6">
-                    <span className={updateState.ytdlpResult.success ? 'text-green-400' : 'text-red-400'}>
-                      yt-dlp: {updateState.ytdlpResult.message}
+                    <span className={updateState.depsResult.success ? 'text-green-400' : 'text-red-400'}>
+                      Dependencies: {updateState.depsResult.message}
                     </span>
                   </div>
                 )}
