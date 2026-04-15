@@ -69,6 +69,14 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
+func (a *App) GetAvailableLanguages() map[string]string {
+	languages := make(map[string]string, len(availableLanguages))
+	for code, name := range availableLanguages {
+		languages[code] = name
+	}
+	return languages
+}
+
 func (a *App) GetSettings() *domain.Setting {
 	return a.settings
 }
@@ -180,7 +188,7 @@ func (a *App) GetMediaDefaults() *domain.MediaDefaults {
 }
 
 // UpdateMediaDefaults updates the media defaults for new items
-func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio bool, cookies domain.Cookies) {
+func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio bool, cookies domain.Cookies, subtitle domain.Subtitle) {
 	var q domain.VideoQuality
 	switch quality {
 	case "360p":
@@ -198,8 +206,8 @@ func (a *App) UpdateMediaDefaults(quality string, downloadPath string, onlyAudio
 	default:
 		q = domain.Quality1080p
 	}
-	a.mediaDefaults.Update(q, downloadPath, onlyAudio, cookies)
-	log.Printf("Media defaults updated in memory: quality=%s, path=%s, onlyAudio=%v, cookies=%v", quality, downloadPath, onlyAudio, cookies)
+	a.mediaDefaults.Update(q, downloadPath, onlyAudio, cookies, subtitle)
+	log.Printf("Media defaults updated in memory: quality=%s, path=%s, onlyAudio=%v, cookies=%v, subtitle=%v", quality, downloadPath, onlyAudio, cookies, subtitle)
 }
 
 // SaveMediaDefaults saves the media defaults to file
@@ -208,7 +216,7 @@ func (a *App) SaveMediaDefaults() error {
 	return a.mediaDefaults.Save()
 }
 
-func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies, timerange domain.TimeRange) string {
+func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudio bool, isPlaylist bool, playlistSelection domain.PlaylistSelection, cookies domain.Cookies, timerange domain.TimeRange, subtitle domain.Subtitle) string {
 	id := uuid.New().String()
 	log.Printf("Adding to queue: %s with id: %s", url, id)
 
@@ -248,6 +256,7 @@ func (a *App) AddToQueue(url string, quality string, customPath string, onlyAudi
 		PlaylistSelection: playlistSelection,
 		Cookies:           cookies,
 		TimeRange:         timerange,
+		Subtitle:          subtitle,
 		Progress: domain.DownloadProgress{
 			Percentage:      0,
 			DownloadedBytes: 0,
@@ -368,6 +377,14 @@ func (a *App) StartDownloads() {
 					b = b.DownloadSection(m.TimeRange)
 					b = b.ExtractorArgs("youtube:player_client=web_safari")
 				}
+				if m.Subtitle.IsAllowed && len(m.Subtitle.LanguageCodes) > 0 {
+					b = b.IgnoreErrors().
+						WriteSubtitles().
+						WriteAutoSubtitles().
+						SleepSubtitles(30).
+						SubtitlesFormat().
+						SubtitlesLanguages(m.Subtitle.LanguageCodes)
+				}
 				cmd := &command.DownloadCommand{
 					Builder: b,
 				}
@@ -481,6 +498,14 @@ func (a *App) StartSingleDownload(id string) {
 		if media.TimeRange.IsAllowed && media.TimeRange.Validate() == nil {
 			b = b.DownloadSection(media.TimeRange)
 			b = b.ExtractorArgs("youtube:player_client=web_safari")
+		}
+		if media.Subtitle.IsAllowed && len(media.Subtitle.LanguageCodes) > 0 {
+			b = b.IgnoreErrors().
+				WriteSubtitles().
+				WriteAutoSubtitles().
+				SleepSubtitles(30).
+				SubtitlesFormat().
+				SubtitlesLanguages(media.Subtitle.LanguageCodes)
 		}
 		cmd := &command.DownloadCommand{
 			Builder: b,

@@ -59,6 +59,20 @@ export namespace domain {
 	        this.logs = source["logs"];
 	    }
 	}
+	export class Subtitle {
+	    is_allowed: boolean;
+	    language_codes?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Subtitle(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.is_allowed = source["is_allowed"];
+	        this.language_codes = source["language_codes"];
+	    }
+	}
 	export class TimeRange {
 	    is_allowed: boolean;
 	    start?: string;
@@ -107,6 +121,7 @@ export namespace domain {
 	    is_playlist: boolean;
 	    playlist_selection?: PlaylistSelection;
 	    time_range?: TimeRange;
+	    subtitle?: Subtitle;
 	
 	    static createFrom(source: any = {}) {
 	        return new Media(source);
@@ -127,6 +142,7 @@ export namespace domain {
 	        this.is_playlist = source["is_playlist"];
 	        this.playlist_selection = this.convertValues(source["playlist_selection"], PlaylistSelection);
 	        this.time_range = this.convertValues(source["time_range"], TimeRange);
+	        this.subtitle = this.convertValues(source["subtitle"], Subtitle);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -152,6 +168,7 @@ export namespace domain {
 	    download_path: string;
 	    only_audio: boolean;
 	    cookies?: Cookies;
+	    subtitle?: Subtitle;
 	
 	    static createFrom(source: any = {}) {
 	        return new MediaDefaults(source);
@@ -163,6 +180,7 @@ export namespace domain {
 	        this.download_path = source["download_path"];
 	        this.only_audio = source["only_audio"];
 	        this.cookies = this.convertValues(source["cookies"], Cookies);
+	        this.subtitle = this.convertValues(source["subtitle"], Subtitle);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -196,6 +214,7 @@ export namespace domain {
 	        this.parallel_downloads = source["parallel_downloads"];
 	    }
 	}
+	
 
 }
 

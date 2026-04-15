@@ -11,6 +11,7 @@ import {
     StartSingleDownload,
     GetSupportedBrowsersForCookies,
     SelectCookiesPath,
+    GetAvailableLanguages,
 } from '../../wailsjs/go/main/App';
 import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 import { domain } from '../../wailsjs/go/models';
@@ -308,11 +309,19 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
     const [selectedBrowser, setSelectedBrowser] = useState('');
     const [isStartHovered, setIsStartHovered] = useState(false);
 
+    // Subtitle state
+    const [isSubtitleEnabled, setIsSubtitleEnabled] = useState(false);
+    const [availableSubLanguages, setAvailableSubLanguages] = useState<Record<string, string>>({});
+    const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+    const [subtitleSearch, setSubtitleSearch] = useState('');
+    const selectedSubtitleLabels = selectedLanguages.map((code) => availableSubLanguages[code] || code);
+
     // Load media defaults when dialog opens
     useEffect(() => {
         if (open) {
             loadDefaults();
             loadSupportedBrowsers();
+            loadAvailableLanguages();
             setIsPlaylist(false);
             setSelectionType('all');
             setRangeStart('1');
@@ -325,6 +334,9 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
             setCookiesType('file');
             setCookiesPath('');
             setSelectedBrowser('');
+            setIsSubtitleEnabled(false);
+            setSelectedLanguages([]);
+            setSubtitleSearch('');
         }
     }, [open, url]);
 
@@ -341,6 +353,15 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
 
         return () => window.clearTimeout(focusId);
     }, [open, isLoading]);
+
+    const loadAvailableLanguages = async () => {
+        try {
+            const langs = await GetAvailableLanguages();
+            setAvailableSubLanguages(langs || {});
+        } catch (error) {
+            console.error('Error loading available languages:', error);
+        }
+    };
 
     const loadSupportedBrowsers = async () => {
         try {
@@ -374,6 +395,12 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         setCookiesPath(cookies.path || '');
                         setSelectedBrowser('');
                     }
+                }
+
+                const subtitle = defaults.subtitle;
+                if (subtitle) {
+                    setSelectedLanguages(subtitle.language_codes || []);
+                    setIsSubtitleEnabled(subtitle.is_allowed || false);
                 }
             }
         } catch (error) {
@@ -421,6 +448,13 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         return cookies;
     };
 
+    const getSubtitlePayload = () => {
+        const subtitle = new domain.Subtitle();
+        subtitle.is_allowed = isSubtitleEnabled;
+        subtitle.language_codes = selectedLanguages;
+        return subtitle;
+    };
+
     const enqueueMedia = async (): Promise<string> => {
         const selection = new domain.PlaylistSelection();
         selection.type = selectionType;
@@ -439,8 +473,9 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
         }
 
         const cookies = getCookiesPayload();
-        const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies, timeRange);
-        await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies);
+        const subtitle = getSubtitlePayload();
+        const id = await AddToQueue(url, quality, downloadPath, onlyAudio, isPlaylist, selection, cookies, timeRange, subtitle);
+        await UpdateMediaDefaults(quality, downloadPath, onlyAudio, cookies, subtitle);
         await SaveMediaDefaults();
         return id;
     };
@@ -585,6 +620,188 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                                                     Invalid format. Expected <code>HH:MM:SS</code> (example: 00:01:05).
                                             </p>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Subtitle Selection */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingBottom: '2px',
+                                }}
+                            >
+                                <div>
+                                    <label className="text-gray-300 text-sm font-medium block">Subtitles</label>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Download available subtitles for this media
+                                    </p>
+                                    {isSubtitleEnabled && (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: '6px',
+                                                marginTop: '8px',
+                                            }}
+                                        >
+                                            {selectedSubtitleLabels.length > 0 && 
+                                                selectedSubtitleLabels.map((label, index) => (
+                                                    <span
+                                                        key={`${label}-${index}`}
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '999px',
+                                                            background: 'rgba(59, 130, 246, 0.12)',
+                                                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                                                            color: '#93c5fd',
+                                                            fontSize: '11px',
+                                                            lineHeight: '1',
+                                                        }}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                ))
+                                            }
+                                        </div>
+                                    )}
+                                </div>
+                                <PlaylistToggle checked={isSubtitleEnabled} onChange={setIsSubtitleEnabled} />
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateRows: isSubtitleEnabled ? '1fr' : '0fr',
+                                    transition: 'grid-template-rows 0.2s ease',
+                                }}
+                            >
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div style={{ paddingTop: isSubtitleEnabled ? '8px' : '0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                                        <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                                            Select one or more languages
+                                        </p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {selectedLanguages.length > 0 && (
+                                                <button
+                                                    onClick={() => setSelectedLanguages([])}
+                                                    title={`Clear all selections (${selectedLanguages.length})`}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        color: '#f87171',
+                                                        background: 'rgba(248, 113, 113, 0.1)',
+                                                        border: '1px solid rgba(248, 113, 113, 0.2)',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s ease'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(248, 113, 113, 0.2)';
+                                                        e.currentTarget.style.borderColor = 'rgba(248, 113, 113, 0.3)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)';
+                                                        e.currentTarget.style.borderColor = 'rgba(248, 113, 113, 0.2)';
+                                                    }}
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M3 6h18" />
+                                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                            <div style={{ width: '150px' }}>
+                                                <StyledInput
+                                                    value={subtitleSearch}
+                                                    onChange={(e) => setSubtitleSearch(e.target.value)}
+                                                    placeholder="Search language..."
+                                                    bg="#0d0d0d"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                        <div
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                                                gap: '8px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                padding: '8px',
+                                                background: '#0d0d0d',
+                                                borderRadius: '10px',
+                                                border: '1px solid #2d2d2d'
+                                            }}
+                                        >
+                                            {Object.entries(availableSubLanguages)
+                                                .filter(([_, name]) => name.toLowerCase().includes(subtitleSearch.toLowerCase()))
+                                                .map(([code, name]) => (
+                                                <div
+                                                    key={code}
+                                                    onClick={() => {
+                                                        setSelectedLanguages(prev =>
+                                                            prev.includes(code)
+                                                                ? prev.filter(c => c !== code)
+                                                                : [...prev, code]
+                                                        );
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        padding: '4px 8px',
+                                                        fontSize: '12px',
+                                                        color: selectedLanguages.includes(code) ? '#60a5fa' : '#d1d5db',
+                                                        cursor: 'pointer',
+                                                        background: selectedLanguages.includes(code) ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                                        borderRadius: '4px',
+                                                        transition: 'background 0.15s ease'
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width: '14px',
+                                                        height: '14px',
+                                                        border: `1px solid ${selectedLanguages.includes(code) ? '#3b82f6' : '#4b5563'}`,
+                                                        borderRadius: '2px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}>
+                                                        {selectedLanguages.includes(code) && (
+                                                            <div style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '1px' }} />
+                                                        )}
+                                                    </div>
+                                                    {name}
+                                                </div>
+                                            ))}
+                                            {Object.entries(availableSubLanguages).filter(([_, name]) => name.toLowerCase().includes(subtitleSearch.toLowerCase())).length === 0 && (
+                                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', py: '20px', color: '#6b7280', fontSize: '12px' }}>
+                                                    No languages found matching "{subtitleSearch}"
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -887,7 +1104,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         onClick={handleAddToQueue}
                         variant="outline"
                         className="border-[#262626] hover:bg-[#1f1f1f]"
-                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid}
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid || (isSubtitleEnabled && selectedLanguages.length === 0)}
                     >
                         Add to Queue
                     </Button>
@@ -902,7 +1119,7 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                             transition: 'background-color 0.15s ease',
                         }}
                         autoFocus
-                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid}
+                        disabled={isLoading || !downloadPath || !isCookiesConfigurationValid || !isSectionRangeValid || (isSubtitleEnabled && selectedLanguages.length === 0)}
                     >
                         Start Download
                     </Button>
