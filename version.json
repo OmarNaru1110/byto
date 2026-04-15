@@ -1,9 +1,9 @@
 {
-  "version": "3.2.0",
-  "release_date": "2026-04-02",
-  "changelog": "- Add time range selection for media downloads.\n- Add Vodafone Cash support option to support panel.\n- Add Deno dependency management and integration.",
+  "version": "3.3.0",
+  "release_date": "2026-04-15",
+  "changelog": "- Add subtitle support with language selection.\n- Implement background update check and notification system.",
   "downloads": {
-    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.2.0/byto-amd64-installer.exe",
+    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.3.0/byto-amd64-installer.exe",
     "darwin": "",
     "linux": ""
   },
