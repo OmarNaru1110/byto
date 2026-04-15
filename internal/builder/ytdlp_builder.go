@@ -5,6 +5,7 @@ import (
 	"byto/internal/domain"
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 type YTDLPBuilder struct {
@@ -148,6 +149,38 @@ func (y *YTDLPBuilder) ExtractorArgs(args string) *YTDLPBuilder {
 
 func (y *YTDLPBuilder) DownloadSection(timerange domain.TimeRange) *YTDLPBuilder {
 	y.args = append(y.args, "--download-sections", fmt.Sprintf("*%s-%s", timerange.Start, timerange.End))
+	return y
+}
+
+func (y *YTDLPBuilder) IgnoreErrors() *YTDLPBuilder {
+	y.args = append(y.args, "--ignore-errors")
+	return y
+}
+
+func (y *YTDLPBuilder) WriteSubtitles() *YTDLPBuilder {
+	y.args = append(y.args, "--write-subs")
+	return y
+}
+
+func (y *YTDLPBuilder) WriteAutoSubtitles() *YTDLPBuilder {
+	y.args = append(y.args, "--write-auto-subs")
+	return y
+}
+
+func (y *YTDLPBuilder) SleepSubtitles(seconds int) *YTDLPBuilder {
+	y.args = append(y.args, "--sleep-subtitles", fmt.Sprintf("%d", seconds))
+	return y
+}
+
+func (y *YTDLPBuilder) SubtitlesFormat() *YTDLPBuilder {
+	y.args = append(y.args, "--sub-format", "srt/vtt/best")
+	return y
+}
+
+func (y *YTDLPBuilder) SubtitlesLanguages(languageCodes []string) *YTDLPBuilder {
+	if len(languageCodes) > 0 {
+		y.args = append(y.args, "--sub-langs", strings.Join(languageCodes, ","))
+	}
 	return y
 }
 

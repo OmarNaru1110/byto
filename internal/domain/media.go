@@ -20,6 +20,7 @@ type Media struct {
 	IsPlaylist        bool              `json:"is_playlist"`
 	PlaylistSelection PlaylistSelection `json:"playlist_selection,omitempty"`
 	TimeRange         TimeRange         `json:"time_range,omitempty"`
+	Subtitle          Subtitle          `json:"subtitle,omitempty"`
 	mu                sync.Mutex
 	// Context for cancellation
 	Ctx        context.Context    `json:"-"`
@@ -28,6 +29,11 @@ type Media struct {
 	OnProgress     func(id string, progress DownloadProgress) `json:"-"`
 	OnStatusChange func(id string, status DownloadStatus)     `json:"-"`
 	OnTitleChange  func(id string, title string)              `json:"-"`
+}
+
+type Subtitle struct {
+	IsAllowed     bool     `json:"is_allowed"`
+	LanguageCodes []string `json:"language_codes,omitempty"`
 }
 
 type Cookies struct {

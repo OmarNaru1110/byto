@@ -14,6 +14,7 @@ type MediaDefaults struct {
 	DownloadPath string       `json:"download_path"`
 	OnlyAudio    bool         `json:"only_audio"`
 	Cookies      Cookies      `json:"cookies,omitempty"`
+	Subtitle     Subtitle     `json:"subtitle,omitempty"`
 }
 
 func getMediaDefaultsFilePath() string {
@@ -81,9 +82,10 @@ func (m *MediaDefaults) Save() error {
 	return nil
 }
 
-func (m *MediaDefaults) Update(quality VideoQuality, downloadPath string, onlyAudio bool, cookies Cookies) {
+func (m *MediaDefaults) Update(quality VideoQuality, downloadPath string, onlyAudio bool, cookies Cookies, subtitle Subtitle) {
 	m.Quality = quality
 	m.DownloadPath = downloadPath
 	m.OnlyAudio = onlyAudio
 	m.Cookies = cookies
+	m.Subtitle = subtitle
 }
