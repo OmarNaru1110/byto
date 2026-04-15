@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Settings, Download, FolderOpen, Plus, Play, Pause, Heart, Loader2 } from 'lucide-react';
+import { Settings, Download, FolderOpen, Plus, Play, Pause, Heart, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { DownloadItem } from './components/DownloadItem';
-import { SettingsPanel } from './components/SettingsPanel';
+import { SettingsPanel, type UpdateStatusState } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
 import { DependencyCheckDialog } from './components/DependencyCheckDialog';
 import { AddMediaDialog } from './components/AddMediaDialog';
-import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies, SetupDependencies } from '../wailsjs/go/main/App';
+import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder, CheckDependencies, SetupDependencies, PerformFullUpdate } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff, ClipboardGetText } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
+import { toast, Toaster } from 'sonner';
 
 // Map backend status (number) to frontend status (string)
 const statusMap: Record<number, 'pending' | 'downloading' | 'paused' | 'completed' | 'error'> = {
@@ -93,6 +94,7 @@ export default function App() {
     const [showDependencyUpdate, setShowDependencyUpdate] = useState<boolean | null>(null);
     const [showAddMediaDialog, setShowAddMediaDialog] = useState(false);
     const [pendingUrl, setPendingUrl] = useState('');
+    const [initialUpdateState, setInitialUpdateState] = useState<UpdateStatusState | undefined>(undefined);
 
     // Run dependency maintenance in background, and only show dialog when deps are missing.
     useEffect(() => {
@@ -205,10 +207,29 @@ export default function App() {
             }));
         });
 
+        const unsubUpdate = EventsOn('app_update_available', (result: any) => {
+            toast.info(`New version ${result.latest_version} available`, {
+                description: "A new update is available for Byto.",
+                action: {
+                    label: "View in Settings",
+                    onClick: () => {
+                        setInitialUpdateState({
+                            status: 'update-available',
+                            message: `New version available: ${result.latest_version}`,
+                            appResult: result
+                        });
+                        setShowSettings(true);
+                    }
+                },
+                duration: 10000,
+            });
+        });
+
         return () => {
             EventsOff('download_progress');
             EventsOff('download_status');
             EventsOff('download_title');
+            EventsOff('app_update_available');
         };
     }, []);
 
@@ -340,13 +361,18 @@ export default function App() {
             {showSettings && (
                 <SettingsPanel
                     parallelDownloads={parallelDownloads}
-                    onClose={() => setShowSettings(false)}
+                    initialUpdateState={initialUpdateState}
+                    onClose={() => {
+                        setShowSettings(false);
+                        setInitialUpdateState(undefined);
+                    }}
                     onSave={async (settings) => {
                         const parallel = settings.parallelDownloads === 'unlimited' ? 100 : parseInt(settings.parallelDownloads, 10);
                         await UpdateSettings(parallel);
                         await SaveSettings();
                         setParallelDownloads(settings.parallelDownloads);
                         setShowSettings(false);
+                        setInitialUpdateState(undefined);
                     }}
                 />
             )}
@@ -440,6 +466,7 @@ export default function App() {
                     </div>
                 </div>
             </div>
+            <Toaster closeButton position="bottom-right" theme="dark" />
         </div>
     );
 }

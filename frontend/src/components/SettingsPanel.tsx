@@ -9,11 +9,12 @@ interface SettingsPanelProps {
   parallelDownloads: string;
   onClose: () => void;
   onSave: (settings: { parallelDownloads: string }) => void;
+  initialUpdateState?: UpdateStatusState;
 }
 
 type UpdateStatus = 'idle' | 'checking' | 'deps-updating' | 'app-checking' | 'update-available' | 'downloading' | 'ready-to-install' | 'done' | 'error';
 
-interface UpdateState {
+export interface UpdateStatusState {
   status: UpdateStatus;
   message: string;
   depsResult?: { success: boolean; message: string };
@@ -33,14 +34,15 @@ interface UpdateState {
 export function SettingsPanel({
   parallelDownloads: initialParallelDownloads,
   onClose,
-  onSave
+  onSave,
+  initialUpdateState
 }: SettingsPanelProps) {
   // Local state - only applied when Save is clicked
   const [localParallelDownloads, setLocalParallelDownloads] = useState(initialParallelDownloads);
 
   // Update state
   const [appVersion, setAppVersion] = useState('');
-  const [updateState, setUpdateState] = useState<UpdateState>({
+  const [updateState, setUpdateState] = useState<UpdateStatusState>(initialUpdateState || {
     status: 'idle',
     message: ''
   });

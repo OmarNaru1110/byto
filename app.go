@@ -63,6 +63,26 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	log.Println("Byto App started")
+
+	// Perform background update check
+	go func() {
+		// Wait components to initialize (frontend etc)
+		time.Sleep(5 * time.Second)
+		log.Println("Performing background update check...")
+		result := a.updater.CheckAppUpdate()
+		if result.Success && result.HasUpdate {
+			log.Printf("Background update check: new version %s available", result.LatestVersion)
+			runtime.EventsEmit(ctx, "app_update_available", map[string]interface{}{
+				"success":         result.Success,
+				"message":         result.Message,
+				"current_version": result.CurrentVersion,
+				"latest_version":  result.LatestVersion,
+				"has_update":      result.HasUpdate,
+				"changelog":       result.Changelog,
+				"download_url":    result.DownloadURL,
+			})
+		}
+	}()
 }
 
 func (a *App) Greet(name string) string {
