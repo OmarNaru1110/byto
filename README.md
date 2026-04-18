@@ -20,7 +20,12 @@
 - **Auto-Dependency Management**: Byto automatically detects, downloads, and updates [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://www.ffmpeg.org/) for you. No manual setup required.
 - **Quality Control**: Select your preferred video resolution, from efficient **360p** up to crisp **4K (2160p)**.
 - **Real-time Logs**: View detailed logs for every download to understand exactly what's happening.
-
+- **Audio Only**: Extract and download only the audio track from videos.
+- **Media Range**: Download a specific time range of a video or audio file.
+- **Specific Videos**: Select and download specific videos from a playlist.
+- **Playlist Range**: Download a specific range of videos from any playlist.
+- **Cookie Support**: Support for cookies to enable authorized downloads.
+- **Subtitles Download**: Automatically extract and download subtitles for media.
 ## Technology Stack
 
 Byto relies on a robust stack to deliver high performance and a small footprint:
