@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
     SelectDownloadFolderWithDefault,
     GetMediaDefaults,
@@ -553,20 +554,26 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                         <div>
                             <label className="text-gray-300 text-sm font-medium block mb-1">Video Quality</label>
                             <p className="text-gray-500 text-xs mb-2">Select preferred quality for this download</p>
-                            <select
+                            <Select
                                 value={quality}
-                                onChange={(e) => setQuality(e.target.value)}
+                                onValueChange={(val) => setQuality(val)}
                                 disabled={onlyAudio}
-                                className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
-                                style={{ opacity: onlyAudio ? 0.5 : 1, cursor: onlyAudio ? 'not-allowed' : 'default' }}
                             >
-                                <option value="360p">360p</option>
-                                <option value="480p">480p</option>
-                                <option value="720p">720p (HD)</option>
-                                <option value="1080p">1080p (Full HD)</option>
-                                <option value="1440p">1440p (2K)</option>
-                                <option value="2160p">2160p (4K)</option>
-                            </select>
+                                <SelectTrigger
+                                    className="w-full bg-[#1f1f1f] border-[#262626] text-gray-100 h-9"
+                                    style={{ opacity: onlyAudio ? 0.5 : 1, cursor: onlyAudio ? 'not-allowed' : 'default' }}
+                                >
+                                    <SelectValue placeholder="Select quality" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#141414] border-[#262626] text-gray-100">
+                                    <SelectItem value="360p">360p</SelectItem>
+                                    <SelectItem value="480p">480p</SelectItem>
+                                    <SelectItem value="720p">720p (HD)</SelectItem>
+                                    <SelectItem value="1080p">1080p (Full HD)</SelectItem>
+                                    <SelectItem value="1440p">1440p (2K)</SelectItem>
+                                    <SelectItem value="2160p">2160p (4K)</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Download Sections */}
@@ -1027,17 +1034,21 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                                                                 style={{ marginTop: '10px' }}
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <select
+                                                                <Select
                                                                     value={selectedBrowser}
-                                                                    onChange={(e) => setSelectedBrowser(e.target.value)}
-                                                                    className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
+                                                                    onValueChange={(val) => setSelectedBrowser(val)}
                                                                 >
-                                                                    {supportedBrowsers.map((browser) => (
-                                                                        <option key={browser} value={browser}>
-                                                                            {browser}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                                                    <SelectTrigger className="w-full bg-[#1f1f1f] border-[#262626] text-gray-100 h-9">
+                                                                        <SelectValue placeholder="Select browser" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent className="bg-[#141414] border-[#262626] text-gray-100">
+                                                                        {supportedBrowsers.map((browser) => (
+                                                                            <SelectItem key={browser} value={browser}>
+                                                                                {browser}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
                                                             </div>
                                                         )}
                                                     </div>
