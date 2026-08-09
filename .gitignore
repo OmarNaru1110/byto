@@ -1,8 +1,34 @@
-build/bin
-node_modules
-frontend/dist
-frontend/build
+# Wails build output & cache
+build/bin/
+frontend/package.json.md5
+frontend/dist/
+frontend/build/
+
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Linux Packages & AppImage artifacts
+*.AppImage
+*.AppDir
+appimagetool*
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.tar.gz
+*.exe
+
+# Diagram & Editor files
 *.drawio
 *.drawio.*
-*.exe
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc
 PLANNED_ISSUES.md
