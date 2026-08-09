@@ -1,11 +1,11 @@
 {
-  "version": "3.1.0",
+  "version": "3.4.0",
   "release_date": "2026-08-09",
   "changelog": "- Add Linux support.",
   "downloads": {
-    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.3.0/byto-amd64-installer.exe",
+    "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.4.0/byto-amd64-installer.exe",
     "darwin": "",
-    "linux": "https://github.com/OmarNaru1110/byto/releases/download/v3.3.0/byto-linux-amd64"
+    "linux": "https://github.com/OmarNaru1110/byto/releases/download/v3.4.0/byto-linux-amd64"
   },
   "min_version": "0.1.0"
 }
