@@ -5,7 +5,7 @@
   "downloads": {
     "windows": "https://github.com/OmarNaru1110/byto/releases/download/v3.3.0/byto-amd64-installer.exe",
     "darwin": "",
-    "linux": ""
+    "linux": "https://github.com/OmarNaru1110/byto/releases/download/v3.3.0/byto-linux-amd64"
   },
   "min_version": "0.1.0"
 }

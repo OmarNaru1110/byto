@@ -46,6 +46,25 @@ Download the latest release from the [Releases](https://github.com/OmarNaru1110/
 2. You may see a SmartScreen warning (the app is not code-signed). Click **"More info"** → **"Run anyway"**
 3. Follow the installation wizard
 
+#### Linux
+1. Download `byto-linux-amd64` from the release page
+2. Make it executable and run it:
+
+```bash
+chmod +x byto-linux-amd64
+./byto-linux-amd64
+```
+
+Byto is built with Wails, so some Linux systems also need GTK3 and WebKit2GTK runtime libraries installed. If those libraries are already present on your distro, no extra setup is needed. If Byto does not start, run `wails doctor` to see the exact packages your system needs.
+
+Common package names are:
+
+- Debian / Ubuntu 22.04+: `libgtk-3-0 libwebkit2gtk-4.1-0`
+- Debian 11 / Ubuntu 20.04: `libgtk-3-0 libwebkit2gtk-4.0-37`
+- Fedora 40+: `gtk3 webkit2gtk4.1`
+- RHEL / AlmaLinux / Rocky / CentOS 8-9: `gtk3 webkit2gtk3`
+- Arch / Manjaro: `gtk3 webkit2gtk-4.1`
+
 ### Building from Source
 If you are a developer and want to build Byto yourself, please check our [Contribution Guide](CONTRIBUTING.md).
 
