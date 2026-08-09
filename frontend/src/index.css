@@ -255,6 +255,15 @@
         border-radius: 0;
     }
 
+    select {
+        color-scheme: dark;
+    }
+
+    select option {
+        background-color: #141414;
+        color: #ededed;
+    }
+
     ::file-selector-button {
         font: inherit;
         font-feature-settings: inherit;
@@ -1659,6 +1668,7 @@
   }
 
   :root {
+      color-scheme: dark;
       --font-size: 16px;
       --background: #0a0a0a;
       --foreground: #ededed;

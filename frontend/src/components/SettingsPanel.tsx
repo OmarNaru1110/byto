@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { RefreshCw, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { GetAppVersion, PerformFullUpdate, DownloadAppUpdate, LaunchInstaller } from '../../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 
@@ -290,18 +291,22 @@ export function SettingsPanel({
           <div>
             <label className="text-gray-300 text-sm">Parallel Downloads</label>
             <p className="text-gray-500 text-xs mb-2">Number of simultaneous downloads</p>
-            <select
+            <Select
               value={localParallelDownloads}
-              onChange={(e) => setLocalParallelDownloads(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
+              onValueChange={(val) => setLocalParallelDownloads(val)}
             >
-              <option value="1">1 (Sequential)</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
+              <SelectTrigger className="w-full bg-[#1f1f1f] border-[#262626] text-gray-100 h-9">
+                <SelectValue placeholder="Select parallel downloads" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#141414] border-[#262626] text-gray-100">
+                <SelectItem value="1">1 (Sequential)</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
