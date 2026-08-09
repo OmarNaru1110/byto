@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const AppVersion = "3.3.0"
+const AppVersion = "3.4.0"
 
 const (
 	GitHubOwner = "OmarNaru1110"
