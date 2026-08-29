@@ -5,6 +5,7 @@ import (
 	"byto/internal/deps"
 	"byto/internal/domain"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -738,5 +739,187 @@ func TestCookiesFromBrowser_ChainsWithOtherMethods(t *testing.T) {
 	}
 	if args[4] != "https://example.com/video" {
 		t.Errorf("expected URL at index 4, got %q", args[4])
+	}
+}
+func TestBooleanFlagsAreNotDuplicated(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.Newline().Newline()
+	b.Update().Update()
+	b.IgnoreErrors().IgnoreErrors()
+	b.WriteSubtitles().WriteSubtitles()
+	b.WriteAutoSubtitles().WriteAutoSubtitles()
+
+	args := b.Build()
+
+	flags := []string{
+		"--newline",
+		"--update",
+		"--ignore-errors",
+		"--write-subs",
+		"--write-auto-subs",
+	}
+
+	for _, flag := range flags {
+		count := 0
+
+		for _, arg := range args {
+			if arg == flag {
+				count++
+			}
+		}
+
+		if count != 1 {
+			t.Errorf("expected %s exactly once, got %d times: %v", flag, count, args)
+		}
+	}
+}
+
+func TestFormatLastCallWinsWithoutDuplication(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.Audio()
+	b.Video(domain.Quality720p)
+
+	args := b.Build()
+
+	count := 0
+
+	for _, arg := range args {
+		if arg == "-f" {
+			count++
+		}
+	}
+
+	if count != 1 {
+		t.Errorf("expected -f exactly once, got %d times: %v", count, args)
+	}
+
+	expectedFormat := "bestvideo[height<=720]+bestaudio/best[height<=720]/best"
+
+	if args[len(args)-1] != expectedFormat {
+		t.Errorf("expected format %q, got %q", expectedFormat, args[len(args)-1])
+	}
+}
+
+func TestSingleValueFlagsAreNotDuplicated(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.Cookies("first.txt")
+	b.Cookies("second.txt")
+
+	b.DownloadPath("/first")
+	b.DownloadPath("/second")
+
+	args := b.Build()
+
+	cookiesCount := 0
+	outputCount := 0
+
+	for _, arg := range args {
+		switch arg {
+		case "--cookies":
+			cookiesCount++
+		case "-o":
+			outputCount++
+		}
+	}
+
+	if cookiesCount != 1 {
+		t.Errorf("expected --cookies once, got %d: %v", cookiesCount, args)
+	}
+
+	if outputCount != 1 {
+		t.Errorf("expected -o once, got %d: %v", outputCount, args)
+	}
+}
+
+func TestBuildHasDeterministicOrder(t *testing.T) {
+	b1 := &builder.YTDLPBuilder{}
+	b1.
+		Video(domain.Quality720p).
+		Cookies("/tmp/cookies.txt").
+		DownloadPath("/tmp").
+		Newline().
+		URL("https://example.com/video")
+
+	b2 := &builder.YTDLPBuilder{}
+	b2.
+		URL("https://example.com/video").
+		Newline().
+		DownloadPath("/tmp").
+		Cookies("/tmp/cookies.txt").
+		Video(domain.Quality720p)
+
+	args1 := b1.Build()
+	args2 := b2.Build()
+
+	if !reflect.DeepEqual(args1, args2) {
+		t.Errorf(
+			"expected deterministic argument order\nfirst:  %v\nsecond: %v",
+			args1,
+			args2,
+		)
+	}
+}
+
+func TestJsRuntimesPreservesRepeatedValues(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.JsRuntimes("deno:/path/to/deno")
+	b.JsRuntimes("node:/path/to/node")
+
+	args := b.Build()
+
+	expected := []string{
+		"--js-runtimes", "deno:/path/to/deno",
+		"--js-runtimes", "node:/path/to/node",
+	}
+
+	if !reflect.DeepEqual(args, expected) {
+		t.Errorf("expected %v, got %v", expected, args)
+	}
+}
+
+func TestExtractorArgsPreservesRepeatedValues(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.ExtractorArgs("youtube:player_client=web")
+	b.ExtractorArgs("tiktok:api_hostname=example")
+
+	args := b.Build()
+
+	expected := []string{
+		"--extractor-args", "youtube:player_client=web",
+		"--extractor-args", "tiktok:api_hostname=example",
+	}
+
+	if !reflect.DeepEqual(args, expected) {
+		t.Errorf("expected %v, got %v", expected, args)
+	}
+}
+
+func TestDownloadSectionPreservesRepeatedValues(t *testing.T) {
+	b := &builder.YTDLPBuilder{}
+
+	b.DownloadSection(domain.TimeRange{
+		Start: "00:10",
+		End:   "00:20",
+	})
+
+	b.DownloadSection(domain.TimeRange{
+		Start: "01:00",
+		End:   "01:30",
+	})
+
+	args := b.Build()
+
+	expected := []string{
+		"--download-sections", "*00:10-00:20",
+		"--download-sections", "*01:00-01:30",
+	}
+
+	if !reflect.DeepEqual(args, expected) {
+		t.Errorf("expected %v, got %v", expected, args)
 	}
 }
